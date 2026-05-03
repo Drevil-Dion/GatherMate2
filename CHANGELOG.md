@@ -1,7 +1,10 @@
+# Changelog
+
 GatherMate2 (asc-1.0.8)
 - Fixed minimap icon positioning errors and jittering when used alongside FarmHud.
 - Fixed `GetViewRadius` error gracefully in 3.3.5a client when Minimap is reparented.
 
 GatherMate2 (asc-1.0.7)
 - Added documentation folder and home page.
+
 

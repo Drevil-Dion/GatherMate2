@@ -1,6 +1,6 @@
 # GatherMate2
 
-![Version](https://img.shields.io/badge/version-asc--1.0.7-blue?style=for-the-badge) ![WoW Version](https://img.shields.io/badge/WoW-3.3.5a-orange?style=for-the-badge)
+![Version](https://img.shields.io/badge/version-asc--1.0.8-blue?style=for-the-badge) ![WoW Version](https://img.shields.io/badge/WoW-3.3.5a-orange?style=for-the-badge)
 [![Platform](https://img.shields.io/badge/platform-Project%20Ascension-green?style=for-the-badge)](https://ascension.gg/)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue?style=for-the-badge)](https://Xurkon.github.io/GatherMate2/)
 ![Total Downloads](https://img.shields.io/github/downloads/Xurkon/GatherMate2/total?style=for-the-badge&label=TOTAL%20DOWNLOADS&color=e67e22)
