@@ -384,7 +384,7 @@ function Display:UpdateVisibility()
 			visible = active_tracking[v] == true
 		end
 		GatherMate.Visible[v] = visible
-		print(string.format("GatherMate2 Display: %s visibility = %s (state=%s, have_prof=%s)", v, tostring(visible), tostring(state), tostring(have_prof_skill[v])))
+		-- DEBUG: print(string.format("GatherMate2 Display: %s visibility = %s (state=%s, have_prof=%s)", v, tostring(visible), tostring(state), tostring(have_prof_skill[v])))
 
 		-- For tracking circle
 		visible = false
@@ -710,7 +710,7 @@ function Display:UpdateMiniMap(force)
 		setMapCallCount = 0
 	end
 	
-	local debugThisCall = (now - lastDebugPrint) > 1.0
+	local debugThisCall = false -- DISABLED: (now - lastDebugPrint) > 1.0
 	
 	if debugThisCall then
 		print(string.format("GatherMate2 Display: UpdateMiniMap start (force=%s)", tostring(force)))
@@ -750,37 +750,22 @@ function Display:UpdateMiniMap(force)
 		return
 	end
 	
-	if debugThisCall then
-		print("GatherMate2 Display: CHECKPOINT 1 - about to check database")
-	end
-	
 	-- get current player position
 	local x, y = GetPlayerMapPosition("player")
-	
-	if debugThisCall then
-		print(string.format("GatherMate2 Display: CHECKPOINT 2 - player pos: %.4f, %.4f", x or -1, y or -1))
-	end
 	
 	-- if position is 0, the player changed the worldmap to another zone, just keep the old values
 	-- GetCurrentMapZone now changes when you changes maps
 	-- REMOVED zone name check - it's broken and causes valid positions to be rejected
 	if (x == 0 or y == 0) then
-		print(string.format("GatherMate2 Display: Position is 0,0 - using lastX=%s, lastY=%s", tostring(lastX), tostring(lastY)))
 		-- Only use lastX/lastY if they're valid (not 0)
 		if lastX ~= 0 and lastY ~= 0 then
 			x, y = lastX, lastY
 			level = lastLevel
-			print(string.format("GatherMate2 Display: Using last position: %.4f, %.4f", x, y))
 		else
 			-- No valid last position, skip this update
-			print("GatherMate2 Display: Invalid position and no last position available, skipping")
 			return
 		end
-	else
-		print(string.format("GatherMate2 Display: Position VALID, using x=%.4f, y=%.4f", x, y))
 	end
-	
-	print(string.format("GatherMate2 Display: CHECKPOINT 3 - final position for search: %.4f, %.4f", x, y))
 	-- get data from the API for calculations
 	local zoom = realMinimap:GetZoom()
 	local diffZoom = zoom ~= lastZoom
@@ -805,17 +790,8 @@ function Display:UpdateMiniMap(force)
 
 	-- if the player moved, the zoom changed, or changed the facing (rotating map) - update nodes
 	local shouldUpdate = (x ~= lastX or y ~= lastY or diffZoom or facing ~= lastFacing or level ~= lastLevel or force)
-	print(string.format("GatherMate2 Display: CHECKPOINT 4 - shouldUpdate=%s (x≠lastX:%s, y≠lastY:%s, diffZoom:%s, facing≠lastFacing:%s, level≠lastLevel:%s, force:%s)", 
-		tostring(shouldUpdate),
-		tostring(x ~= lastX),
-		tostring(y ~= lastY),
-		tostring(diffZoom),
-		tostring(facing ~= lastFacing),
-		tostring(level ~= lastLevel),
-		tostring(force)))
 	
 	if shouldUpdate then
-		print("GatherMate2 Display: CHECKPOINT 5 - Entering shouldUpdate block")
 		-- set upvalues to new settings
 		minimapShape = GetMinimapShape and self.minimapShapes[GetMinimapShape() or "ROUND"]
 		mapRadius = GetMinimapViewRadius() -- self.minimapSize[indoors][zoom] / 2
@@ -824,9 +800,6 @@ function Display:UpdateMiniMap(force)
 		minimapStrata = realMinimap:GetFrameStrata()
 		minimapFrameLevel = realMinimap:GetFrameLevel() + 5
 		
-		print(string.format("GatherMate2 Display: CHECKPOINT 6 - minimap params set (mapRadius=%.1f, width=%.1f, height=%.1f)", 
-			mapRadius or -1, minimapWidth or -1, minimapHeight or -1))
-
 		-- update upvalues for icon placement
 		lastX, lastY = x, y
 		lastC = GetCurrentMapContinent()
@@ -838,8 +811,6 @@ function Display:UpdateMiniMap(force)
 			sin = math_sin(facing)
 			cos = math_cos(facing)
 		end
-		
-		print(string.format("GatherMate2 Display: CHECKPOINT 7 - About to iterate nodes (range=%.1f)", mapRadius * nodeRange))
 		
 		-- iterate the node databases and add the nodes
 		local nodeCount = 0
@@ -885,7 +856,7 @@ local lastScale, lastAlphaPref
 function Display:UpdateWorldMap(force)
 	if force then rememberForce = true end
 	if not WorldMapFrame:IsVisible() then
-		print("GatherMate2 Display: UpdateWorldMap - WorldMapFrame not visible")
+		-- DEBUG: print("GatherMate2 Display: UpdateWorldMap - WorldMapFrame not visible")
 		return
 	end
 	if not db.showWorldMap then

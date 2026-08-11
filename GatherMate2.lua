@@ -100,6 +100,15 @@ function GatherMate:OnInitialize()
 	db = self.db.profile
 	filter = db.filter
 	self:PatchNotes()
+	
+	-- Diagnostic: Check mapData after a short delay (LibMapDataExtract loads on PLAYER_LOGIN)
+	C_Timer.After(3, function()
+		if self.mapData then
+			print("GatherMate2: mapData is LOADED and ready!")
+		else
+			print("GatherMate2: ERROR - mapData is NIL! LibMapDataExtract failed to load.")
+		end
+	end)
 end
 
 --[[
