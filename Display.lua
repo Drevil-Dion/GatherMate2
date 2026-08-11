@@ -694,7 +694,13 @@ function Display:UpdateMiniMap(force)
 		print(string.format("GatherMate2 Display: UpdateMiniMap - realMinimap not visible (Minimap=%s, IsVisible=%s)", tostring(realMinimap), tostring(realMinimap:IsVisible())))
 		return
 	end
-	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	
+	if WorldMapFrame:IsShown() then
+		print("GatherMate2 Display: UpdateMiniMap - WorldMapFrame is shown, skipping minimap update")
+		return
+	else
+		SetMapToCurrentZone()
+	end
 
 	-- update our zone info
 	zone = GetCurrentMapAreaID()
