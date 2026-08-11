@@ -755,9 +755,35 @@ function Display:UpdateMiniMap(force)
 	
 	-- if position is 0, the player changed the worldmap to another zone, just keep the old values
 	-- GetCurrentMapZone now changes when you changes maps
-	if (x == 0 or y == 0 or GatherMate.mapData:MapLocalize(zone) ~= GetRealZoneText()) then
-		x, y = lastX, lastY
-		level = lastLevel
+	local zoneMatch = GatherMate.mapData:MapLocalize(zone) == GetRealZoneText()
+	if debugThisCall then
+		print(string.format("GatherMate2 Display: Zone match check: MapLocalize(%s)='%s' vs GetRealZoneText()='%s' = %s", 
+			tostring(zone), 
+			tostring(GatherMate.mapData:MapLocalize(zone)), 
+			tostring(GetRealZoneText()),
+			tostring(zoneMatch)))
+	end
+	
+	if (x == 0 or y == 0 or not zoneMatch) then
+		if debugThisCall then
+			print(string.format("GatherMate2 Display: Position check failed (x=%s, y=%s, zoneMatch=%s), using lastX=%s, lastY=%s", 
+				tostring(x), tostring(y), tostring(zoneMatch), tostring(lastX), tostring(lastY)))
+		end
+		-- Only use lastX/lastY if they're valid (not 0)
+		if lastX ~= 0 and lastY ~= 0 then
+			x, y = lastX, lastY
+			level = lastLevel
+		else
+			-- No valid last position, skip this update
+			if debugThisCall then
+				print("GatherMate2 Display: Invalid position and no last position available, skipping")
+			end
+			return
+		end
+	end
+	
+	if debugThisCall then
+		print(string.format("GatherMate2 Display: CHECKPOINT 3 - final position for search: %.4f, %.4f", x, y))
 	end
 	-- get data from the API for calculations
 	local zoom = realMinimap:GetZoom()
