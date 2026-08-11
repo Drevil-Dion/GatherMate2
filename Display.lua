@@ -569,60 +569,80 @@ function Display:getMiniPin(coord, nodeID, nodeType, zone, index)
 end
 
 -- Fallback icon placement when Astrolabe fails (missing zone data)
--- Places icon directly on minimap using correct coordinate math
--- Note: Minimap icons SHOULD move as player moves - the player arrow stays centered
+-- Places icon directly on minimap using absolute world coordinates
 local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
-	-- Get player's current position
+	-- CRITICAL FIX: Set map to current zone to get accurate player position
+	-- Without this, GetPlayerMapPosition returns stale data
+	SetMapToCurrentZone()
+	
+	-- Get player's current position in world coordinates (0-1)
 	local px, py = GetPlayerMapPosition("player")
 	if not px or not py or px == 0 or py == 0 then
 		return false
 	end
 	
-	-- Get zone dimensions to calculate yards
+	-- Get zone dimensions in yards
 	local zoneWidth, zoneHeight = GatherMate.mapData:MapArea(zone, 0)
 	if not zoneWidth or not zoneHeight then
 		return false
 	end
 	
-	-- Calculate offset from player in map coordinates (0-1 scale)
-	local dx = x - px
+	-- Calculate the absolute offset from player in world coordinates
+	local dx = x - px  -- Offset in map coordinates (0-1 scale)
 	local dy = y - py
+	
+	-- DEBUG: Only print occasionally to avoid spam
+	if not pin.lastDebug or (GetTime() - pin.lastDebug) > 2 then
+		print(string.format("GatherMate2: Icon at world %.4f,%.4f | Player at %.4f,%.4f | Offset %.4f,%.4f", 
+			x, y, px, py, dx, dy))
+		pin.lastDebug = GetTime()
+	end
 	
 	-- Convert to yards
 	local yardsX = dx * zoneWidth
 	local yardsY = dy * zoneHeight
 	
-	-- Convert yards to pixels
-	-- mapRadius is in yards, it represents the radius of visible area
-	-- We need to scale to minimap pixel size
-	local scale = minimapWidth / mapRadius
-	local pixelX = yardsX * scale
-	local pixelY = -yardsY * scale  -- Negative because WoW Y axis is inverted
+	-- Calculate distance
+	local distYards = math.sqrt(yardsX*yardsX + yardsY*yardsY)
 	
-	-- Apply rotation if minimap rotates
+	-- Convert yards to minimap pixels
+	-- mapRadius is how many yards are visible from center to edge
+	local pixelsPerYard = minimapWidth / mapRadius
+	local pixelX = yardsX * pixelsPerYard
+	local pixelY = -yardsY * pixelsPerYard  -- Negative because Y is inverted
+	
+	if not pin.lastDebug2 or (GetTime() - pin.lastDebug2) > 2 then
+		print(string.format("GatherMate2: Yards %.2f,%.2f | Pixels %.2f,%.2f | Dist %.2f yards", 
+			yardsX, yardsY, pixelX, pixelY, distYards))
+		pin.lastDebug2 = GetTime()
+	end
+	
+	-- Apply minimap rotation if enabled
 	if rotateMinimap and sin and cos then
 		local rotX = pixelX * cos - pixelY * sin
 		local rotY = pixelX * sin + pixelY * cos
 		pixelX, pixelY = rotX, rotY
 	end
 	
-	-- Check if out of range and clamp to edge if needed
-	local distPixels = math.sqrt(pixelX*pixelX + pixelY*pixelY)
-	if db.nodeRange and distPixels > minimapWidth then
-		-- Place on edge
-		local edgeScale = minimapWidth / distPixels
-		pixelX = pixelX * edgeScale
-		pixelY = pixelY * edgeScale
-	elseif distPixels > minimapWidth * 1.5 then
-		-- Too far, hide it
+	-- Handle icons at the edge
+	local pixelDist = math.sqrt(pixelX*pixelX + pixelY*pixelY)
+	if db.nodeRange and pixelDist > minimapWidth then
+		-- Clamp to edge
+		local scale = minimapWidth / pixelDist
+		pixelX = pixelX * scale
+		pixelY = pixelY * scale
+	elseif pixelDist > minimapWidth * 2 then
+		-- Too far, hide
 		pin:Hide()
 		return false
 	end
 	
-	-- Set position relative to minimap center
+	-- Anchor to CENTER of minimap
+	-- Player is always at CENTER, icons are positioned relative to player
 	pin:ClearAllPoints()
 	pin:SetPoint("CENTER", realMinimap, "CENTER", pixelX, pixelY)
 	pin:Show()
+	
 	return true
 end
 
