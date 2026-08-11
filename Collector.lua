@@ -632,14 +632,24 @@ local trees = {
 local lastNode_ID = 0
 -- Should be called for herb, mine, tree, treasure
 function Collector:GameObject(event, objid)
+	-- Ensure we're on the right map
+	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	
 	local x, y = GetPlayerMapPosition("player")
-	if x == 0 and y == 0 then return end
+	if x == 0 and y == 0 then
+		-- Try again after setting map
+		SetMapToCurrentZone()
+		x, y = GetPlayerMapPosition("player")
+		if x == 0 and y == 0 then
+			return
+		end
+	end
+	
 	-- Temporary fix, the map "ScarletEnclave" and "EasternPlaguelands"
 	-- both have the same English display name as "Eastern Plaguelands"
 	-- so we ignore the new Death Knight starting zone for now.
 	-- if GetMapInfo() == "ScarletEnclave" then return end TODO Validate in wrath, shoud be fine
-	--self:GatherCompleted()
-	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	
 	local zone = GetCurrentMapAreaID()
 	local level = GetCurrentMapDungeonLevel()
 	local node_type, node_id
@@ -656,7 +666,13 @@ function Collector:GameObject(event, objid)
 		node_type = "Woodcutting"
 		node_id = trees[objid]
 	end
-	-- print(objid, node_type, node_id) -- debug print
+	
+	-- Debug: Print what we found (remove this later if it works)
+	if node_type and node_id then
+		print(string.format("GatherMate2: Found %s node (ID: %d, objID: %d) at %.2f, %.2f in zone %s", 
+			node_type, node_id, objid, x, y, tostring(zone)))
+	end
+	
 	if not node_type or not node_id then return end
 	-- db lock check
 	if GatherMate.db.profile.dbLocks[node_type] then return	end
@@ -695,5 +711,8 @@ function Collector:GameObject(event, objid)
 		end
 		lastNode_ID = objid
 		lastNodeCoords = foundCoord
+		print(string.format("GatherMate2: Node added successfully!"))
+	else
+		print(string.format("GatherMate2: Node skipped (duplicate nearby)"))
 	end
 end
