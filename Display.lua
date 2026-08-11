@@ -860,7 +860,10 @@ function Display:UpdateMiniMap(force)
 		return
 	else
 		lastSetMapTime = now
-		SetMapToCurrentZone()
+		-- CRITICAL: Force map position refresh by setting to a different map first
+		-- This ensures GetPlayerMapPosition returns fresh coordinates
+		SetMapZoom(GetCurrentMapContinent(), 0) -- Reset to continent view
+		SetMapToCurrentZone() -- Then set back to current zone - this refreshes player coords
 	end
 
 	-- update our zone info
