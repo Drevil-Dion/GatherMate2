@@ -4,6 +4,12 @@ local L = LibStub("AceLocale-3.0"):GetLocale("GatherMate2")
 
 local Astrolabe = DongleStub("Astrolabe-0.4")
 
+-- Check if Astrolabe loaded successfully
+if not Astrolabe then
+	print("GatherMate2 ERROR: Astrolabe library not found! Icons will not display.")
+	print("GatherMate2: This addon requires the Astrolabe-0.4 library to function.")
+end
+
 local realMinimap = Minimap
 
 -- Compatibility fix for GetViewRadius (missing in 3.3.5a)
