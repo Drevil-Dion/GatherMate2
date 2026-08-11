@@ -520,9 +520,12 @@ function Display:addWorldPin(coord, nodeID, nodeType, zone, index, continent)
 		end)
 		
 		if not success then
-			print(string.format("GatherMate2: Astrolabe error for zone %d: %s", zone, tostring(err)))
-			-- Hide the pin if Astrolabe can't place it
-			pin:Hide()
+			-- Astrolabe failed, use direct placement on world map
+			pin:ClearAllPoints()
+			local wmWidth = WorldMapButton:GetWidth()
+			local wmHeight = WorldMapButton:GetHeight()
+			pin:SetPoint("TOPLEFT", WorldMapButton, "TOPLEFT", x * wmWidth, -y * wmHeight)
+			pin:Show()
 		end
 		
 		worldmapPins[index] = pin
@@ -563,46 +566,55 @@ end
 -- Fallback icon placement when Astrolabe fails (missing zone data)
 -- Places icon directly on minimap using simple math
 local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
-	print(string.format("GatherMate2: Trying direct placement for zone %d at %.4f,%.4f", zone, x, y))
+	-- Don't recalculate if icon is already properly positioned
+	-- The issue is we're being called every frame, recalculating relative position
+	-- We need to use Astrolabe-style edge placement or anchor to map, not recalculate
 	
-	-- Get player's current position
+	-- For now, let's just try using SetPoint with absolute minimap coordinates
+	-- This won't work perfectly but might be better
+	
+	-- Calculate the angle and distance from map center
 	local px, py = GetPlayerMapPosition("player")
 	if not px or not py or px == 0 or py == 0 then
-		print("GatherMate2: Direct placement failed - invalid player position")
 		return false
 	end
 	
-	print(string.format("GatherMate2: Player at %.4f,%.4f", px, py))
+	-- Get zone dimensions to calculate yards
+	local zoneWidth, zoneHeight = GatherMate.mapData:MapArea(zone, 0)
+	if not zoneWidth or not zoneHeight then
+		return false
+	end
 	
-	-- Calculate offset from player
-	local dx = (x - px) * minimapWidth * 2
-	local dy = (py - y) * minimapHeight * 2
+	-- Calculate distance in yards
+	local dx = (x - px) * zoneWidth
+	local dy = (y - py) * zoneHeight
+	local distYards = math.sqrt(dx*dx + dy*dy)
 	
-	print(string.format("GatherMate2: Offset dx=%.2f, dy=%.2f (minimapWidth=%.2f, height=%.2f)", dx, dy, minimapWidth, minimapHeight))
+	-- Convert to minimap pixels (approximate)
+	-- mapRadius is in yards, minimapWidth is in pixels
+	local pixelsPerYard = minimapWidth / mapRadius
+	local pixelDx = dx * pixelsPerYard
+	local pixelDy = -dy * pixelsPerYard  -- Negative because WoW Y is inverted
 	
 	-- Apply rotation if minimap rotates
 	if rotateMinimap and sin and cos then
-		local rotDx = dx * cos - dy * sin
-		local rotDy = dx * sin + dy * cos
-		dx, dy = rotDx, rotDy
-		print("GatherMate2: Applied rotation")
+		local rotDx = pixelDx * cos - pixelDy * sin
+		local rotDy = pixelDx * sin + pixelDy * cos
+		pixelDx, pixelDy = rotDx, rotDy
 	end
 	
-	-- Check if within minimap bounds
-	local dist = math.sqrt(dx*dx + dy*dy)
-	if dist > minimapWidth then
-		-- Out of range, place on edge
-		local scale = minimapWidth / dist
-		dx = dx * scale
-		dy = dy * scale
-		print(string.format("GatherMate2: Out of range (%.2f > %.2f), scaled to edge", dist, minimapWidth))
+	-- Clamp to minimap edge if out of range
+	local pixelDist = math.sqrt(pixelDx*pixelDx + pixelDy*pixelDy)
+	if pixelDist > minimapWidth then
+		local scale = minimapWidth / pixelDist
+		pixelDx = pixelDx * scale
+		pixelDy = pixelDy * scale
 	end
 	
-	-- Set position
+	-- Set position relative to minimap center
 	pin:ClearAllPoints()
-	pin:SetPoint("CENTER", realMinimap, "CENTER", dx, -dy)
+	pin:SetPoint("CENTER", realMinimap, "CENTER", pixelDx, pixelDy)
 	pin:Show()
-	print("GatherMate2: Icon placed successfully")
 	return true
 end
 
