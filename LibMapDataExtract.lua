@@ -133,10 +133,6 @@ function GatherMate.mapData:MapArea(id)
 	end
 	if idtodxdy[id] then
 		local width, height = idtodxdy[id][1], idtodxdy[id][2]
-		-- Only print if returning 0,0 which indicates a problem
-		if width == 0 or height == 0 then
-			print(string.format("GatherMate2: MapArea(%s) has zero dimensions: %s, %s", tostring(id), tostring(width), tostring(height)))
-		end
 		return width, height
 	else
 		-- Zone not in our table - try to get it dynamically
@@ -146,8 +142,13 @@ function GatherMate.mapData:MapArea(id)
 		local origContinent = GetCurrentMapContinent()
 		local origZone = GetCurrentMapZone()
 		
-		if SetMapByID(id) then
+		local success = SetMapByID(id)
+		print(string.format("GatherMate2 MapArea: SetMapByID(%s) returned %s", tostring(id), tostring(success)))
+		
+		if success then
 			local mapFileName, textureHeight, textureWidth, isMicroDungeon = GetMapInfo()
+			print(string.format("GatherMate2 MapArea: GetMapInfo returned: file=%s, height=%s, width=%s, isMicro=%s", 
+				tostring(mapFileName), tostring(textureHeight), tostring(textureWidth), tostring(isMicroDungeon)))
 			
 			-- Restore map state
 			if origContinent and origZone and origContinent > 0 then
