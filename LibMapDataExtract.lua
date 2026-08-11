@@ -14,15 +14,17 @@ local mapToLocal = {}
 -- Classic WoW 3.3.5 compatible map initialization
 -- Build list of areaIDs using Classic API
 local function InitializeMapData()
+	print("GatherMate2: Initializing map data...")
 	-- Store current map state
 	local origContinent = GetCurrentMapContinent()
 	local origZone = GetCurrentMapZone()
 	
+	local count = 0
 	-- Iterate through all possible map IDs for Classic WoW
 	for i=1, 1000 do
 		if SetMapByID(i) then
-			local mapFileName, textureHeight, textureWidth = GetMapInfo()
-			if mapFileName then
+			local mapFileName, textureHeight, textureWidth, isMicroDungeon, microDungeonMapName = GetMapInfo()
+			if mapFileName and not isMicroDungeon then
 				nametoid[mapFileName] = i
 				
 				-- Get localized zone name using GetRealZoneText after setting the map
@@ -33,20 +35,30 @@ local function InitializeMapData()
 					mapToLocal[mapFileName] = mapFileName
 				end
 				
-				-- Calculate map dimensions (width, height in yards)
-				-- Classic maps use textureHeight and textureWidth
-				if textureHeight and textureWidth then
-					idtodxdy[i] = { [1] = textureWidth or 0, [2] = textureHeight or 0 }
+				-- For zone dimensions, we need to use texture dimensions directly
+				-- In Classic WoW, these represent the actual playable area
+				-- Store them in a format Astrolabe can use (width, height in game units)
+				if textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
+					-- The texture dimensions ARE the zone dimensions in Classic
+					-- They represent the size of the playable area
+					idtodxdy[i] = { [1] = textureWidth, [2] = textureHeight }
+					count = count + 1
 				else
-					idtodxdy[i] = { [1] = 0, [2] = 0 }
+					-- Fallback: use reasonable defaults
+					idtodxdy[i] = { [1] = 4480, [2] = 3040 }  -- Average zone size
 				end
 			end -- end if mapFileName
 		end -- end if SetMapByID
 	end -- end for loop
 	
+	print(string.format("GatherMate2: Initialized %d zones", count))
+	
 	-- Restore original map state
-	if origContinent and origZone then
+	if origContinent and origZone and origContinent > 0 then
 		SetMapZoom(origContinent, origZone)
+	else
+		-- If we can't restore, just set to current zone
+		SetMapToCurrentZone()
 	end
 end -- end function InitializeMapData
 
@@ -111,8 +123,11 @@ function GatherMate.mapData:MapArea(id)
 		id = nametoid[id]
 	end
 	if idtodxdy[id] then
-		return idtodxdy[id][1], idtodxdy[id][2]
+		local width, height = idtodxdy[id][1], idtodxdy[id][2]
+		print(string.format("GatherMate2: MapArea(%s) returning %s, %s", tostring(id), tostring(width), tostring(height)))
+		return width, height
 	else
+		print(string.format("GatherMate2: MapArea(%s) - no data, returning 0, 0", tostring(id)))
 		return 0, 0
 	end
 end
