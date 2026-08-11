@@ -232,20 +232,45 @@ local lastNodeCoords = 0
 
 -- Should only be called for fishing and gas clouds
 function Collector:addItem(skill,what)
+	print(string.format("GatherMate2: addItem called - skill=%s, what=%s", tostring(skill), tostring(what)))
+	
 	local x, y = GetPlayerMapPosition("player")
-	if x == 0 and y == 0 then return end
+	print(string.format("GatherMate2: Player position: %.4f, %.4f", x, y))
+	
+	if x == 0 and y == 0 then 
+		print("GatherMate2: Position is 0,0 - aborting")
+		return 
+	end
+	
 	-- Temporary fix, the map "ScarletEnclave" and "EasternPlaguelands"
 	-- both have the same English display name as "Eastern Plaguelands"
 	-- so we ignore the new Death Knight starting zone for now.
 	-- if GetMapInfo() == "ScarletEnclave" then return end TODO Validate in wrath, shoud be fine
 	--self:GatherCompleted()
-	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	if WorldMapFrame:IsShown() then 
+		print("GatherMate2: WorldMap is shown - aborting")
+		return 
+	else 
+		SetMapToCurrentZone() 
+	end
+	
 	local zone = GetCurrentMapAreaID()
 	local level = GetCurrentMapDungeonLevel()
+	print(string.format("GatherMate2: Zone=%s, Level=%s", tostring(zone), tostring(level)))
+	
 	local node_type = spells[skill]
-	if not node_type or not what then return end
+	print(string.format("GatherMate2: node_type=%s", tostring(node_type)))
+	
+	if not node_type or not what then 
+		print(string.format("GatherMate2: Missing node_type or what - aborting"))
+		return 
+	end
+	
 	-- db lock check
-	if GatherMate.db.profile.dbLocks[node_type] then return	end
+	if GatherMate.db.profile.dbLocks[node_type] then 
+		print(string.format("GatherMate2: Database locked for %s - aborting", node_type))
+		return	
+	end
 
 	local range = GatherMate.db.profile.cleanupRange[node_type]
 	-- special case for fishing and gas extraction guage the pointing direction
@@ -254,16 +279,27 @@ function Collector:addItem(skill,what)
 		if yw == 0 or yh == 0 then return end -- No zone size data
 		x,y = self:GetFloatingNodeLocation(x, y, yw, yh)
 	end
+	
 	local nid = GatherMate:GetIDForNode(node_type, what)
+	print(string.format("GatherMate2: GetIDForNode returned: %s", tostring(nid)))
+	
 	-- if we couldnt find the node id for what was found, exit the add
-	if not nid then return end
+	if not nid then 
+		print(string.format("GatherMate2: Could not find node ID for '%s' - aborting", what))
+		return 
+	end
+	
 	local rares = self.rareNodes
 	-- run through the nearby's
 	local skip = false
 	local foundCoord = GatherMate.mapData:EncodeLoc(x, y, level)
 	local specialNode = false
 	local specialWhat = what
-	if foundCoord == lastNodeCoords and what == lastNode then return end
+	if foundCoord == lastNodeCoords and what == lastNode then 
+		print("GatherMate2: Duplicate of last node - aborting")
+		return 
+	end
+	
 	--[[ DISABLE SPECIAL NODE PROCESSING FOR HERBS
 	if self.specials[zone] and self.specials[zone][node_type] ~= nil then
 		specialWhat = GatherMate:GetNameForNode(node_type,self.specials[zone][node_type])
@@ -290,6 +326,9 @@ function Collector:addItem(skill,what)
 		end
 		lastNode = what
 		lastNodeCoords = foundCoord
+		print(string.format("GatherMate2: Successfully added %s node '%s' at %.4f, %.4f", node_type, what, x, y))
+	else
+		print(string.format("GatherMate2: Skipped adding node (duplicate nearby)"))
 	end
 end
 
@@ -310,13 +349,25 @@ end
 	get the target your clicking on
 ]]
 function Collector:GetWorldTarget()
-	if foundTarget or not spells[curSpell] then return end
-	if (MinimapCluster:IsMouseOver()) then return end
+	print("GatherMate2: GetWorldTarget called")
+	if foundTarget or not spells[curSpell] then 
+		print(string.format("GatherMate2: GetWorldTarget - foundTarget=%s, curSpell=%s", tostring(foundTarget), tostring(curSpell)))
+		return 
+	end
+	if (MinimapCluster:IsMouseOver()) then 
+		print("GatherMate2: GetWorldTarget - minimap is mouseover, skipping")
+		return 
+	end
 	local what = tooltipLeftText1:GetText()
+	print(string.format("GatherMate2: GetWorldTarget - tooltip text: '%s'", tostring(what)))
 	local nodeID = GatherMate:GetIDForNode(spells[prevSpell], what)
+	print(string.format("GatherMate2: GetWorldTarget - nodeID: %s", tostring(nodeID)))
 	if what and prevSpell and what ~= prevSpell and nodeID then
+		print(string.format("GatherMate2: GetWorldTarget - calling addItem"))
 		self:addItem(prevSpell,what)
 		foundTarget = true
+	else
+		print(string.format("GatherMate2: GetWorldTarget - conditions not met (what=%s, prevSpell=%s, nodeID=%s)", tostring(what), tostring(prevSpell), tostring(nodeID)))
 	end
 end
 
