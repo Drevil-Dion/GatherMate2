@@ -139,13 +139,40 @@ function GatherMate.mapData:MapArea(id)
 		end
 		return width, height
 	else
-		-- Zone not in our table - this shouldn't happen for valid zones
-		-- Only print once per zone to avoid spam
+		-- Zone not in our table - try to get it dynamically
 		if not self.warnedZones then self.warnedZones = {} end
+		
+		-- Try to get the zone info on-the-fly
+		local origContinent = GetCurrentMapContinent()
+		local origZone = GetCurrentMapZone()
+		
+		if SetMapByID(id) then
+			local mapFileName, textureHeight, textureWidth, isMicroDungeon = GetMapInfo()
+			
+			-- Restore map state
+			if origContinent and origZone and origContinent > 0 then
+				SetMapZoom(origContinent, origZone)
+			end
+			
+			if mapFileName and not isMicroDungeon and textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
+				-- Cache it for next time
+				idtodxdy[id] = { [1] = textureWidth, [2] = textureHeight }
+				nametoid[mapFileName] = id
+				if not self.warnedZones[id] then
+					print(string.format("GatherMate2: Dynamically added zone %s (%s): %dx%d", id, mapFileName, textureWidth, textureHeight))
+					self.warnedZones[id] = true
+				end
+				return textureWidth, textureHeight
+			end
+		end
+		
+		-- Failed to get zone info - use fallback
 		if not self.warnedZones[id] then
-			print(string.format("GatherMate2 WARNING: Zone %s not found in map data", tostring(id)))
+			print(string.format("GatherMate2 WARNING: Zone %s not found, using fallback dimensions", tostring(id)))
 			self.warnedZones[id] = true
 		end
-		return 0, 0
+		
+		-- Return reasonable default dimensions instead of 0,0
+		return 5120, 3413  -- Average zone size (similar to Durotar/Elwynn)
 	end
 end
