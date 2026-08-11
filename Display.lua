@@ -755,33 +755,9 @@ function Display:UpdateMiniMap(force)
 	
 	-- if position is 0, the player changed the worldmap to another zone, just keep the old values
 	-- GetCurrentMapZone now changes when you changes maps
-	local zoneMatch = true
-	local mapLocalizeResult, getRealZoneResult
-	
-	local success, err = pcall(function()
-		mapLocalizeResult = GatherMate.mapData:MapLocalize(zone)
-		getRealZoneResult = GetRealZoneText()
-		zoneMatch = (mapLocalizeResult == getRealZoneResult)
-	end)
-	
-	if not success then
-		if debugThisCall then
-			print("GatherMate2 Display: ERROR in zone match check: " .. tostring(err))
-		end
-		zoneMatch = true -- Assume match on error
-	end
-	
-	if debugThisCall then
-		print(string.format("GatherMate2 Display: Zone match check: MapLocalize(%s)='%s' vs GetRealZoneText()='%s' = %s", 
-			tostring(zone), 
-			tostring(mapLocalizeResult), 
-			tostring(getRealZoneResult),
-			tostring(zoneMatch)))
-	end
-	
-	if (x == 0 or y == 0 or not zoneMatch) then
-		print(string.format("GatherMate2 Display: Position check FAILED (x=%s, y=%s, zoneMatch=%s), using lastX=%s, lastY=%s", 
-			tostring(x), tostring(y), tostring(zoneMatch), tostring(lastX), tostring(lastY)))
+	-- REMOVED zone name check - it's broken and causes valid positions to be rejected
+	if (x == 0 or y == 0) then
+		print(string.format("GatherMate2 Display: Position is 0,0 - using lastX=%s, lastY=%s", tostring(lastX), tostring(lastY)))
 		-- Only use lastX/lastY if they're valid (not 0)
 		if lastX ~= 0 and lastY ~= 0 then
 			x, y = lastX, lastY
@@ -793,7 +769,7 @@ function Display:UpdateMiniMap(force)
 			return
 		end
 	else
-		print(string.format("GatherMate2 Display: Position check PASSED, keeping x=%.4f, y=%.4f", x, y))
+		print(string.format("GatherMate2 Display: Position VALID, using x=%.4f, y=%.4f", x, y))
 	end
 	
 	print(string.format("GatherMate2 Display: CHECKPOINT 3 - final position for search: %.4f, %.4f", x, y))
