@@ -813,8 +813,12 @@ local rememberForce = false
 local lastScale, lastAlphaPref
 function Display:UpdateWorldMap(force)
 	if force then rememberForce = true end
-	if not WorldMapFrame:IsVisible() then return end
+	if not WorldMapFrame:IsVisible() then
+		print("GatherMate2 Display: UpdateWorldMap - WorldMapFrame not visible")
+		return
+	end
 	if not db.showWorldMap then
+		print("GatherMate2 Display: UpdateWorldMap - showWorldMap is disabled")
 		clearpins(worldmapPins)
 		return
 	end
@@ -822,7 +826,11 @@ function Display:UpdateWorldMap(force)
 	local zoneid = GetCurrentMapAreaID()
 	local mapLevel = GetCurrentMapDungeonLevel()
 	local mapContinent = GetCurrentMapContinent()
+	
+	print(string.format("GatherMate2 Display: UpdateWorldMap called (force=%s), zoneid=%s, level=%s", tostring(force), tostring(zoneid), tostring(mapLevel)))
+	
 	if not zoneid or zoneid == -1 then
+		print("GatherMate2 Display: UpdateWorldMap - invalid zoneid")
 		clearpins(worldmapPins)
 		return
 	end                                                                                           -- player is not viewing a zone map of a continent
@@ -835,9 +843,11 @@ function Display:UpdateWorldMap(force)
 	worldmapStrata = WorldMapButton:GetFrameStrata()
 	worldmapFrameLevel = WorldMapButton:GetFrameLevel() + 5
 
+	local worldNodeCount = 0
 	for i, db_type in pairs(GatherMate.db_types) do
 		if GatherMate.Visible[db_type] then
 			for coord, nodeID in GatherMate:GetNodesForZone(zoneid, db_type) do
+				worldNodeCount = worldNodeCount + 1
 				local nx, ny, nlevel = GatherMate.mapData:DecodeLoc(coord)
 				if nlevel == mapLevel then
 					self:addWorldPin(coord, nodeID, db_type, zoneid, (i * 1e14) + coord, mapContinent).keep = true
@@ -845,6 +855,7 @@ function Display:UpdateWorldMap(force)
 			end
 		end
 	end
+	print(string.format("GatherMate2 Display: UpdateWorldMap found %d total nodes in zone %s", worldNodeCount, tostring(zoneid)))
 
 	for index, pin in pairs(worldmapPins) do
 		if pin.keep then
