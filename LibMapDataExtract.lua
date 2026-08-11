@@ -25,8 +25,8 @@ local function InitializeMapData()
 			if mapFileName then
 				nametoid[mapFileName] = i
 				
-				-- Get localized zone name
-				local zoneName = GetMapNameByID(i)
+				-- Get localized zone name using GetRealZoneText after setting the map
+				local zoneName = GetRealZoneText()
 				if zoneName and zoneName ~= "" then
 					mapToLocal[mapFileName] = zoneName
 				else
@@ -56,25 +56,29 @@ InitializeMapData()
 function GatherMate.mapData:MapLocalize(mapfile)
 	if mapfile == WORLDMAP_COSMIC_ID then return WORLD_MAP end
 	if type(mapfile) == "number" then
-		local zoneName = GetMapNameByID(mapfile)
-		if zoneName and zoneName ~= "" then
-			return zoneName
-		else
-			-- Fallback: try to get map info
-			local origContinent = GetCurrentMapContinent()
-			local origZone = GetCurrentMapZone()
-			if SetMapByID(mapfile) then
-				local mapFileName = GetMapInfo()
-				if origContinent and origZone then
-					SetMapZoom(origContinent, origZone)
-				end
-				return mapFileName or tostring(mapfile)
-			end
+		-- Fallback: try to get map info by setting the map
+		local origContinent = GetCurrentMapContinent()
+		local origZone = GetCurrentMapZone()
+		if SetMapByID(mapfile) then
+			local zoneName = GetRealZoneText()
+			local mapFileName = GetMapInfo()
+			-- Restore original map state
 			if origContinent and origZone then
 				SetMapZoom(origContinent, origZone)
 			end
-			return tostring(mapfile)
+			if zoneName and zoneName ~= "" then
+				return zoneName
+			elseif mapFileName then
+				return mapFileName
+			else
+				return tostring(mapfile)
+			end
 		end
+		-- Restore original map state if SetMapByID failed
+		if origContinent and origZone then
+			SetMapZoom(origContinent, origZone)
+		end
+		return tostring(mapfile)
 	end
 	return mapToLocal[mapfile] or mapfile
 end
