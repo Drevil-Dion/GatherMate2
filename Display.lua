@@ -560,6 +560,42 @@ function Display:getMiniPin(coord, nodeID, nodeType, zone, index)
 	return pin
 end
 
+-- Fallback icon placement when Astrolabe fails (missing zone data)
+-- Places icon directly on minimap using simple math
+local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
+	-- Get player's current position
+	local px, py = GetPlayerMapPosition("player")
+	if not px or not py or px == 0 or py == 0 then
+		return false
+	end
+	
+	-- Calculate offset from player
+	local dx = (x - px) * minimapWidth * 2
+	local dy = (py - y) * minimapHeight * 2
+	
+	-- Apply rotation if minimap rotates
+	if rotateMinimap and sin and cos then
+		local rotDx = dx * cos - dy * sin
+		local rotDy = dx * sin + dy * cos
+		dx, dy = rotDx, rotDy
+	end
+	
+	-- Check if within minimap bounds
+	local dist = math.sqrt(dx*dx + dy*dy)
+	if dist > minimapWidth then
+		-- Out of range, place on edge
+		local scale = minimapWidth / dist
+		dx = dx * scale
+		dy = dy * scale
+	end
+	
+	-- Set position
+	pin:ClearAllPoints()
+	pin:SetPoint("CENTER", realMinimap, "CENTER", dx, -dy)
+	pin:Show()
+	return true
+end
+
 function Display:addMiniPin(pin, refresh)
 	-- don't update pins if world map is open.  Can change map
 	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
@@ -568,17 +604,23 @@ function Display:addMiniPin(pin, refresh)
 		return Astrolabe:ComputeDistance(lastC, zone, lastX, lastY, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
 	end)
 	
-	if not success then
-		print(string.format("GatherMate2 Display: Astrolabe:ComputeDistance failed for zone %d: %s", pin.zone, tostring(dist)))
-		pin:Hide()
-		return
-	end
-	
-	if dist == nil or dist < 0 then
-		-- Astrolabe failed, hide the pin
-		print(string.format("GatherMate2 Display: Invalid distance for zone %d (dist=%s)", pin.zone, tostring(dist)))
-		pin:Hide()
-		return
+	-- If Astrolabe fails, use direct placement
+	if not success or dist == nil or dist < 0 then
+		-- Calculate distance manually
+		local dx = pin.x - lastX
+		local dy = pin.y - lastY
+		
+		-- Get zone dimensions to convert to yards
+		local zoneWidth, zoneHeight = GatherMate.mapData:MapArea(pin.zone, pin.level or 0)
+		if not zoneWidth or not zoneHeight then
+			pin:Hide()
+			return
+		end
+		
+		-- Approximate distance in yards
+		dist = math.sqrt((dx * zoneWidth)^2 + (dy * zoneHeight)^2)
+		xDist = dx * zoneWidth
+		yDist = dy * zoneHeight
 	end
 	
 	if dist ~= nil and dist >= 0 then
@@ -617,11 +659,14 @@ function Display:addMiniPin(pin, refresh)
 			
 			if success and result then
 				pin:SetAlpha(min(alpha + 0.5, db.alpha))
-				print(string.format("GatherMate2 Display: Successfully placed icon for zone %d at %.4f,%.4f", pin.zone, pin.x, pin.y))
 			else
-				-- Astrolabe failed, hide the pin
-				print(string.format("GatherMate2 Display: PlaceIconOnMinimap failed for zone %d: success=%s, result=%s", pin.zone, tostring(success), tostring(result)))
-				pin:Hide()
+				-- Astrolabe failed, use direct placement
+				local placed = PlaceIconOnMinimapDirect(pin, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
+				if placed then
+					pin:SetAlpha(min(alpha + 0.5, db.alpha))
+				else
+					pin:Hide()
+				end
 			end
 		else
 			pin:Hide()
