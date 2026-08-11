@@ -246,6 +246,7 @@ local listening = false
 local fullInit = false
 function Display:OnEnable()
 	db = GatherMate.db.profile
+	print("GatherMate2 Display: OnEnable called")
 
 	trackingCircle = self.trackingCircle
 	nodeTextures = GatherMate.nodeTextures
@@ -375,6 +376,7 @@ function Display:UpdateVisibility()
 			visible = active_tracking[v] == true
 		end
 		GatherMate.Visible[v] = visible
+		print(string.format("GatherMate2 Display: %s visibility = %s (state=%s, have_prof=%s)", v, tostring(visible), tostring(state), tostring(have_prof_skill[v])))
 
 		-- For tracking circle
 		visible = false
@@ -404,6 +406,7 @@ function Display:SetSkillProfession(skill, profession)
 end
 
 function Display:ScheduleUpdate()
+	print("GatherMate2 Display: ScheduleUpdate called - will update icons")
 	forceNextUpdate = true
 end
 
@@ -683,8 +686,17 @@ end
 	we only care about nodes 1000 yards away
 ]]
 function Display:UpdateMiniMap(force)
-	if not db.showMinimap or not realMinimap:IsVisible() then return end
+	if not db.showMinimap then
+		print("GatherMate2 Display: UpdateMiniMap - showMinimap is disabled")
+		return
+	end
+	if not realMinimap:IsVisible() then
+		print("GatherMate2 Display: UpdateMiniMap - realMinimap not visible")
+		return
+	end
 	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	
+	print("GatherMate2 Display: UpdateMiniMap called (force=" .. tostring(force) .. ")")
 
 	-- update our zone info
 	zone = GetCurrentMapAreaID()
