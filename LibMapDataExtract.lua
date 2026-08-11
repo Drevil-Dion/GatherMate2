@@ -1,212 +1,213 @@
 -- A trimmed down version of LibMapData-1.0 including only the parts that Gathermate2 uses
 -- Classic WoW 3.3.5 Compatible Version
 
-print("GatherMate2: Loading LibMapDataExtract.lua...")
+print("GatherMate2: LibMapDataExtract.lua file loading...")
 
-local GatherMate = LibStub("AceAddon-3.0"):GetAddon("GatherMate2")
-
-if not GatherMate then
-	print("GatherMate2 LibMapDataExtract: ERROR - Could not get GatherMate2 addon!")
-	return
-end
-
-GatherMate.mapData = {}
-print("GatherMate2: mapData table created")
-
-local nametoid = {}
-local idtodxdy = {}
-local mapToLocal = {}
-
--- Classic WoW 3.3.5 compatible map initialization
--- Build list of areaIDs using Classic API
-local function InitializeMapData()
-	print("GatherMate2: Initializing map data...")
-	-- Store current map state
-	local origContinent = GetCurrentMapContinent()
-	local origZone = GetCurrentMapZone()
+-- This file is loaded BEFORE GatherMate2.lua finishes OnInitialize
+-- So we defer execution until PLAYER_LOGIN
+local frame = CreateFrame("Frame")
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:SetScript("OnEvent", function(self, event)
+	print("GatherMate2: LibMapDataExtract initializing...")
 	
-	local count = 0
-	local zoneList = {}
+	local GatherMate = LibStub("AceAddon-3.0"):GetAddon("GatherMate2")
 	
-	-- Iterate through all possible map IDs for Classic WoW
-	for i=1, 1000 do
-		if SetMapByID(i) then
-			local mapFileName, textureHeight, textureWidth, isMicroDungeon, microDungeonMapName = GetMapInfo()
-			if mapFileName and not isMicroDungeon then
-				nametoid[mapFileName] = i
-				
-				-- Get localized zone name using GetRealZoneText after setting the map
-				local zoneName = GetRealZoneText()
-				if zoneName and zoneName ~= "" then
-					mapToLocal[mapFileName] = zoneName
-				else
-					mapToLocal[mapFileName] = mapFileName
-				end
-				
-				-- For zone dimensions, we need to use texture dimensions directly
-				-- In Classic WoW, these represent the actual playable area
-				-- Store them in a format Astrolabe can use (width, height in game units)
-				if textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
-					-- The texture dimensions ARE the zone dimensions in Classic
-					-- They represent the size of the playable area
-					idtodxdy[i] = { [1] = textureWidth, [2] = textureHeight }
-					count = count + 1
-					-- Store some zone info for debugging
-					if count <= 5 then
-						table.insert(zoneList, string.format("Zone %d (%s): %dx%d", i, zoneName or mapFileName, textureWidth, textureHeight))
-					end
-				else
-					-- Fallback: use reasonable defaults
-					idtodxdy[i] = { [1] = 4480, [2] = 3040 }  -- Average zone size
-				end
-			end -- end if mapFileName
-		end -- end if SetMapByID
-	end -- end for loop
-	
-	print(string.format("GatherMate2: Initialized %d zones", count))
-	if #zoneList > 0 then
-		print("GatherMate2: Sample zones: " .. table.concat(zoneList, ", "))
+	if not GatherMate then
+		print("GatherMate2 LibMapDataExtract: ERROR - Could not get GatherMate2 addon!")
+		return
 	end
 	
-	-- Restore original map state
-	if origContinent and origZone and origContinent > 0 then
-		SetMapZoom(origContinent, origZone)
-	else
-		-- If we can't restore, just set to current zone
-		SetMapToCurrentZone()
-	end
-end -- end function InitializeMapData
-
--- Initialize map data when addon loads
-InitializeMapData()
-
--- CRITICAL: Manually add zone 202 (Un'Goro Crater on ChromieCraft)
--- SetMapByID(202) fails, so we hardcode the dimensions
-if not idtodxdy[202] then
-	idtodxdy[202] = { [1] = 1002, [2] = 668 }  -- Un'Goro Crater standard dimensions
-	print("GatherMate2: Manually added zone 202 with dimensions 1002x668")
-end
-
-function GatherMate.mapData:MapLocalize(mapfile)
-	if mapfile == WORLDMAP_COSMIC_ID then return WORLD_MAP end
-	if type(mapfile) == "number" then
-		-- Fallback: try to get map info by setting the map
+	GatherMate.mapData = {}
+	print("GatherMate2: mapData table created")
+	
+	local nametoid = {}
+	local idtodxdy = {}
+	local mapToLocal = {}
+	
+	-- Classic WoW 3.3.5 compatible map initialization
+	-- Build list of areaIDs using Classic API
+	local function InitializeMapData()
+		print("GatherMate2: Scanning map zones...")
+		-- Store current map state
 		local origContinent = GetCurrentMapContinent()
 		local origZone = GetCurrentMapZone()
-		if SetMapByID(mapfile) then
-			local zoneName = GetRealZoneText()
-			local mapFileName = GetMapInfo()
-			-- Restore original map state
+		
+		local count = 0
+		local zoneList = {}
+		
+		-- Iterate through all possible map IDs for Classic WoW
+		for i=1, 1000 do
+			if SetMapByID(i) then
+				local mapFileName, textureHeight, textureWidth, isMicroDungeon, microDungeonMapName = GetMapInfo()
+				if mapFileName and not isMicroDungeon then
+					nametoid[mapFileName] = i
+					
+					-- Get localized zone name using GetRealZoneText after setting the map
+					local zoneName = GetRealZoneText()
+					if zoneName and zoneName ~= "" then
+						mapToLocal[mapFileName] = zoneName
+					else
+						mapToLocal[mapFileName] = mapFileName
+					end
+					
+					-- For zone dimensions, we need to use texture dimensions directly
+					-- In Classic WoW, these represent the actual playable area
+					-- Store them in a format Astrolabe can use (width, height in game units)
+					if textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
+						-- The texture dimensions ARE the zone dimensions in Classic
+						-- They represent the size of the playable area
+						idtodxdy[i] = { [1] = textureWidth, [2] = textureHeight }
+						count = count + 1
+						-- Store some zone info for debugging
+						if count <= 5 then
+							table.insert(zoneList, string.format("Zone %d (%s): %dx%d", i, zoneName or mapFileName, textureWidth, textureHeight))
+						end
+					else
+						-- Fallback: use reasonable defaults
+						idtodxdy[i] = { [1] = 4480, [2] = 3040 }  -- Average zone size
+					end
+				end -- end if mapFileName
+			end -- end if SetMapByID
+		end -- end for loop
+		
+		print(string.format("GatherMate2: Initialized %d zones", count))
+		if #zoneList > 0 then
+			print("GatherMate2: Sample zones: " .. table.concat(zoneList, ", "))
+		end
+		
+		-- Restore original map state
+		if origContinent and origZone and origContinent > 0 then
+			SetMapZoom(origContinent, origZone)
+		else
+			-- If we can't restore, just set to current zone
+			SetMapToCurrentZone()
+		end
+	end -- end function InitializeMapData
+	
+	-- Initialize map data
+	InitializeMapData()
+	
+	-- CRITICAL: Manually add zone 202 (Un'Goro Crater on ChromieCraft)
+	-- SetMapByID(202) fails, so we hardcode the dimensions
+	if not idtodxdy[202] then
+		idtodxdy[202] = { [1] = 1002, [2] = 668 }  -- Un'Goro Crater standard dimensions
+		print("GatherMate2: Manually added zone 202 with dimensions 1002x668")
+	end
+	
+	function GatherMate.mapData:MapLocalize(mapfile)
+		if mapfile == WORLDMAP_COSMIC_ID then return WORLD_MAP end
+		if type(mapfile) == "number" then
+			-- Fallback: try to get map info by setting the map
+			local origContinent = GetCurrentMapContinent()
+			local origZone = GetCurrentMapZone()
+			if SetMapByID(mapfile) then
+				local zoneName = GetRealZoneText()
+				local mapFileName = GetMapInfo()
+				-- Restore original map state
+				if origContinent and origZone then
+					SetMapZoom(origContinent, origZone)
+				end
+				if zoneName and zoneName ~= "" then
+					return zoneName
+				elseif mapFileName then
+					return mapFileName
+				else
+					return tostring(mapfile)
+				end
+			end
+			-- Restore original map state if SetMapByID failed
 			if origContinent and origZone then
 				SetMapZoom(origContinent, origZone)
 			end
-			if zoneName and zoneName ~= "" then
-				return zoneName
-			elseif mapFileName then
-				return mapFileName
-			else
-				return tostring(mapfile)
-			end
+			return tostring(mapfile)
 		end
-		-- Restore original map state if SetMapByID failed
-		if origContinent and origZone then
-			SetMapZoom(origContinent, origZone)
+		return mapToLocal[mapfile] or mapfile
+	end
+	
+	function GatherMate.mapData:EncodeLoc(x,y,level)
+		local level = level or 0
+		if x > 0.9999 then
+			x = 0.9999
 		end
-		return tostring(mapfile)
+		if y > 0.9999 then
+			y = 0.9999
+		end
+		return floor( x * 10000 + 0.5 ) * 1000000 + floor( y * 10000  + 0.5 ) * 100 + level
 	end
-	return mapToLocal[mapfile] or mapfile
-end
-
-function GatherMate.mapData:EncodeLoc(x,y,level)
-	local level = level or 0
-	if x > 0.9999 then
-		x = 0.9999
+	
+	function GatherMate.mapData:DecodeLoc(id)
+		return floor(id/1000000)/10000, floor(id % 1000000 / 100)/10000, id % 100
 	end
-	if y > 0.9999 then
-		y = 0.9999
+	
+	function GatherMate.mapData:GetAllMapIDs(id)
+		return nametoid
 	end
-	return floor( x * 10000 + 0.5 ) * 1000000 + floor( y * 10000  + 0.5 ) * 100 + level
-end
-
-function GatherMate.mapData:DecodeLoc(id)
-	return floor(id/1000000)/10000, floor(id % 1000000 / 100)/10000, id % 100
-end
-
-function GatherMate.mapData:GetAllMapIDs(id)
-	return nametoid
-end
-
-function GatherMate.mapData:MapAreaId(mapFile)
-	return nametoid[mapFile]
-end
-
-function GatherMate.mapData:MapArea(id)
-	if type(id) == "string" then
-		id = nametoid[id]
+	
+	function GatherMate.mapData:MapAreaId(mapFile)
+		return nametoid[mapFile]
 	end
-	if idtodxdy[id] then
-		local width, height = idtodxdy[id][1], idtodxdy[id][2]
-		return width, height
-	else
-		-- Zone not in our table - try to get it dynamically
-		if not self.warnedZones then self.warnedZones = {} end
-		
-		-- Try to get the zone info on-the-fly
-		local origContinent = GetCurrentMapContinent()
-		local origZone = GetCurrentMapZone()
-		
-		local success = SetMapByID(id)
-		print(string.format("GatherMate2 MapArea: SetMapByID(%s) returned %s", tostring(id), tostring(success)))
-		
-		if success then
-			local mapFileName, textureHeight, textureWidth, isMicroDungeon = GetMapInfo()
-			print(string.format("GatherMate2 MapArea: GetMapInfo returned: file=%s, height=%s, width=%s, isMicro=%s", 
-				tostring(mapFileName), tostring(textureHeight), tostring(textureWidth), tostring(isMicroDungeon)))
+	
+	function GatherMate.mapData:MapArea(id, level)
+		if type(id) == "string" then
+			id = nametoid[id]
+		end
+		if idtodxdy[id] then
+			local width, height = idtodxdy[id][1], idtodxdy[id][2]
+			return width, height
+		else
+			-- Zone not in our table - try to get it dynamically
+			if not GatherMate.mapData.warnedZones then GatherMate.mapData.warnedZones = {} end
 			
-			-- Restore map state
-			if origContinent and origZone and origContinent > 0 then
-				SetMapZoom(origContinent, origZone)
-			end
+			-- Try to get the zone info on-the-fly
+			local origContinent = GetCurrentMapContinent()
+			local origZone = GetCurrentMapZone()
 			
-			if mapFileName and not isMicroDungeon and textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
-				-- Cache it for next time
-				idtodxdy[id] = { [1] = textureWidth, [2] = textureHeight }
-				nametoid[mapFileName] = id
-				print(string.format("GatherMate2 MapArea: Cached zone %s dimensions: %d x %d", tostring(id), textureWidth, textureHeight))
-				return textureWidth, textureHeight
-			end
-		end
-		
-		-- SetMapByID failed or returned invalid data
-		-- For zone 202 (custom map patch zone), use reasonable fallback dimensions
-		-- Un'Goro Crater standard dimensions from retail WoW
-		if id == 202 then
-			local fallbackWidth, fallbackHeight = 1002, 668
-			print(string.format("GatherMate2 MapArea: Using hardcoded fallback for zone %s: %d x %d", tostring(id), fallbackWidth, fallbackHeight))
-			-- Cache it
-			idtodxdy[id] = { [1] = fallbackWidth, [2] = fallbackHeight }
-			return fallbackWidth, fallbackHeight
-		end
+			local success = SetMapByID(id)
 			
-			if mapFileName and not isMicroDungeon and textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
-				-- Cache it for next time
-				idtodxdy[id] = { [1] = textureWidth, [2] = textureHeight }
-				nametoid[mapFileName] = id
-				if not self.warnedZones[id] then
-					print(string.format("GatherMate2: Dynamically added zone %s (%s): %dx%d", id, mapFileName, textureWidth, textureHeight))
-					self.warnedZones[id] = true
+			if success then
+				local mapFileName, textureHeight, textureWidth, isMicroDungeon = GetMapInfo()
+				
+				-- Restore map state
+				if origContinent and origZone and origContinent > 0 then
+					SetMapZoom(origContinent, origZone)
 				end
-				return textureWidth, textureHeight
+				
+				if mapFileName and not isMicroDungeon and textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
+					-- Cache it for next time
+					idtodxdy[id] = { [1] = textureWidth, [2] = textureHeight }
+					nametoid[mapFileName] = id
+					if not GatherMate.mapData.warnedZones[id] then
+						print(string.format("GatherMate2: Dynamically added zone %s (%s): %dx%d", id, mapFileName, textureWidth, textureHeight))
+						GatherMate.mapData.warnedZones[id] = true
+					end
+					return textureWidth, textureHeight
+				end
 			end
+			
+			-- SetMapByID failed or returned invalid data
+			-- For zone 202 (custom map patch zone), use reasonable fallback dimensions
+			if id == 202 then
+				local fallbackWidth, fallbackHeight = 1002, 668
+				-- Cache it
+				idtodxdy[id] = { [1] = fallbackWidth, [2] = fallbackHeight }
+				return fallbackWidth, fallbackHeight
+			end
+			
+			-- Failed to get zone info - use fallback
+			if not GatherMate.mapData.warnedZones[id] then
+				print(string.format("GatherMate2 WARNING: Zone %s not found, using fallback dimensions", tostring(id)))
+				GatherMate.mapData.warnedZones[id] = true
+			end
+			
+			-- Return reasonable default dimensions instead of 0,0
+			return 5120, 3413  -- Average zone size (similar to Durotar/Elwynn)
 		end
-		
-		-- Failed to get zone info - use fallback
-		if not self.warnedZones[id] then
-			print(string.format("GatherMate2 WARNING: Zone %s not found, using fallback dimensions", tostring(id)))
-			self.warnedZones[id] = true
-		end
-		
-		-- Return reasonable default dimensions instead of 0,0
-		return 5120, 3413  -- Average zone size (similar to Durotar/Elwynn)
 	end
-end
+	
+	print("GatherMate2: LibMapDataExtract initialization complete!")
+	
+	-- Unregister since we only need to run once
+	self:UnregisterEvent("PLAYER_LOGIN")
+end)
+
+print("GatherMate2: LibMapDataExtract.lua loaded, waiting for PLAYER_LOGIN...")
