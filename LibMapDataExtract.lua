@@ -87,6 +87,32 @@ frame:SetScript("OnEvent", function(self, event)
 	-- Initialize map data
 	InitializeMapData()
 	
+	-- CRITICAL: Manually add zone 31 (Elwynn Forest) if not found during init
+	-- This zone ID is commonly returned by GetCurrentMapAreaID() in Elwynn
+	-- but sometimes not picked up during the 1-1000 scan
+	if not idtodxdy[31] then
+		-- Try to get it dynamically right now
+		local success = SetMapByID(31)
+		if success then
+			local mapFileName, textureHeight, textureWidth, isMicroDungeon = GetMapInfo()
+			if mapFileName and textureWidth and textureHeight and textureWidth > 0 and textureHeight > 0 then
+				idtodxdy[31] = {[1] = textureWidth, [2] = textureHeight}
+				nametoid[mapFileName] = 31
+				print(string.format("GatherMate2: Manually added zone 31 (%s) with dimensions %dx%d", mapFileName, textureWidth, textureHeight))
+			else
+				-- SetMapByID worked but returned invalid data - use known Elwynn dimensions
+				idtodxdy[31] = {[1] = 3666, [2] = 2500}  -- Typical Elwynn Forest size
+				print("GatherMate2: Manually added zone 31 (Elwynn Forest) with estimated dimensions 3666x2500")
+			end
+		else
+			-- SetMapByID failed - use estimated dimensions
+			idtodxdy[31] = {[1] = 3666, [2] = 2500}
+			print("GatherMate2: Manually added zone 31 (Elwynn Forest) with estimated dimensions 3666x2500")
+		end
+		-- Restore map to current zone
+		SetMapToCurrentZone()
+	end
+	
 	-- CRITICAL: Manually add zone 202 (Un'Goro Crater on ChromieCraft)
 	-- SetMapByID(202) fails, so we hardcode the dimensions
 	if not idtodxdy[202] then
