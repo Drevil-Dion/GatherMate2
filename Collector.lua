@@ -188,14 +188,36 @@ function Collector:LootOpened()
 		print(string.format("GatherMate2: Target from GameTooltip: %s", tostring(targetName)))
 	end
 	
-	-- Another fallback: just record based on what we looted
+	-- Another fallback: determine node name from loot items
 	if not targetName and GetNumLootItems() > 0 then
 		local lootIcon, lootName, lootQuantity = GetLootSlotInfo(1)
 		print(string.format("GatherMate2: First loot item: %s", tostring(lootName)))
 		
-		-- For herbs/ore, the loot name often matches or is related to the node
-		-- We'll use the spell context to determine the node type
-		targetName = "Unknown " .. spells[prevSpell] .. " Node"
+		-- Try to map the loot to a node name
+		if lootName and lootToNode[lootName] then
+			targetName = lootToNode[lootName]
+			print(string.format("GatherMate2: Mapped '%s' to node '%s'", lootName, targetName))
+		elseif lootName then
+			-- For herbs, the loot name often IS the node name
+			-- For ore, we can make an educated guess
+			if spells[prevSpell] == "Mining" then
+				-- Remove " Ore" from the end and add " Vein" or " Deposit"
+				local oreName = lootName:gsub(" Ore$", "")
+				if oreName:find("Thorium") then
+					targetName = "Small Thorium Vein"
+				elseif oreName == "Dense Stone" then
+					targetName = "Small Thorium Vein"
+				else
+					targetName = oreName .. " Vein"
+				end
+			else
+				-- For herbs, the loot name usually matches the node name
+				targetName = lootName
+			end
+			print(string.format("GatherMate2: Guessed node name: %s", targetName))
+		else
+			targetName = "Unknown " .. spells[prevSpell] .. " Node"
+		end
 	end
 	
 	if targetName then
@@ -743,6 +765,75 @@ local trees = {
 	[244624] = 620, -- Tirisfal Tree
 	[244617] = 621, -- Westfall Tree
 	[244635] = 622, -- Winterspring Tree
+}
+
+-- Mapping from loot item names to gathering node names
+local lootToNode = {
+	-- Mining Ore -> Vein/Deposit names
+	["Copper Ore"] = "Copper Vein",
+	["Tin Ore"] = "Tin Vein",
+	["Iron Ore"] = "Iron Deposit",
+	["Silver Ore"] = "Silver Vein",
+	["Gold Ore"] = "Gold Vein",
+	["Mithril Ore"] = "Mithril Deposit",
+	["Truesilver Ore"] = "Truesilver Deposit",
+	["Dark Iron Ore"] = "Dark Iron Deposit",
+	["Thorium Ore"] = "Small Thorium Vein",
+	["Dense Stone"] = "Small Thorium Vein",
+	["Arcane Crystal"] = "Rich Thorium Vein",
+	["Fel Iron Ore"] = "Fel Iron Deposit",
+	["Adamantite Ore"] = "Adamantite Deposit",
+	["Khorium Ore"] = "Khorium Vein",
+	["Cobalt Ore"] = "Cobalt Deposit",
+	["Saronite Ore"] = "Saronite Deposit",
+	["Titanium Ore"] = "Titanium Vein",
+	
+	-- Herbalism
+	["Peacebloom"] = "Peacebloom",
+	["Silverleaf"] = "Silverleaf",
+	["Earthroot"] = "Earthroot",
+	["Mageroyal"] = "Mageroyal",
+	["Briarthorn"] = "Briarthorn",
+	["Stranglekelp"] = "Stranglekelp",
+	["Bruiseweed"] = "Bruiseweed",
+	["Wild Steelbloom"] = "Wild Steelbloom",
+	["Grave Moss"] = "Grave Moss",
+	["Kingsblood"] = "Kingsblood",
+	["Liferoot"] = "Liferoot",
+	["Fadeleaf"] = "Fadeleaf",
+	["Goldthorn"] = "Goldthorn",
+	["Khadgar's Whisker"] = "Khadgar's Whisker",
+	["Wintersbite"] = "Wintersbite",
+	["Firebloom"] = "Firebloom",
+	["Purple Lotus"] = "Purple Lotus",
+	["Arthas' Tears"] = "Arthas' Tears",
+	["Sungrass"] = "Sungrass",
+	["Blindweed"] = "Blindweed",
+	["Ghost Mushroom"] = "Ghost Mushroom",
+	["Gromsblood"] = "Gromsblood",
+	["Golden Sansam"] = "Golden Sansam",
+	["Dreamfoil"] = "Dreamfoil",
+	["Mountain Silversage"] = "Mountain Silversage",
+	["Plaguebloom"] = "Plaguebloom",
+	["Icecap"] = "Icecap",
+	["Black Lotus"] = "Black Lotus",
+	["Felweed"] = "Felweed",
+	["Dreaming Glory"] = "Dreaming Glory",
+	["Terocone"] = "Terocone",
+	["Ancient Lichen"] = "Ancient Lichen",
+	["Bloodthistle"] = "Bloodthistle",
+	["Mana Thistle"] = "Mana Thistle",
+	["Netherbloom"] = "Netherbloom",
+	["Nightmare Vine"] = "Nightmare Vine",
+	["Ragveil"] = "Ragveil",
+	["Flame Cap"] = "Flame Cap",
+	["Adder's Tongue"] = "Adder's Tongue",
+	["Goldclover"] = "Goldclover",
+	["Icethorn"] = "Icethorn",
+	["Lichbloom"] = "Lichbloom",
+	["Talandra's Rose"] = "Talandra's Rose",
+	["Tiger Lily"] = "Tiger Lily",
+	["Frost Lotus"] = "Frost Lotus",
 }
 
 local lastNode_ID = 0
