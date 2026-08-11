@@ -815,6 +815,7 @@ function Display:UpdateMiniMap(force)
 		tostring(force)))
 	
 	if shouldUpdate then
+		print("GatherMate2 Display: CHECKPOINT 5 - Entering shouldUpdate block")
 		-- set upvalues to new settings
 		minimapShape = GetMinimapShape and self.minimapShapes[GetMinimapShape() or "ROUND"]
 		mapRadius = GetMinimapViewRadius() -- self.minimapSize[indoors][zoom] / 2
@@ -822,6 +823,9 @@ function Display:UpdateMiniMap(force)
 		minimapHeight = realMinimap:GetHeight() / 2
 		minimapStrata = realMinimap:GetFrameStrata()
 		minimapFrameLevel = realMinimap:GetFrameLevel() + 5
+		
+		print(string.format("GatherMate2 Display: CHECKPOINT 6 - minimap params set (mapRadius=%.1f, width=%.1f, height=%.1f)", 
+			mapRadius or -1, minimapWidth or -1, minimapHeight or -1))
 
 		-- update upvalues for icon placement
 		lastX, lastY = x, y
@@ -834,6 +838,9 @@ function Display:UpdateMiniMap(force)
 			sin = math_sin(facing)
 			cos = math_cos(facing)
 		end
+		
+		print(string.format("GatherMate2 Display: CHECKPOINT 7 - About to iterate nodes (range=%.1f)", mapRadius * nodeRange))
+		
 		-- iterate the node databases and add the nodes
 		local nodeCount = 0
 		for i, db_type in pairs(GatherMate.db_types) do
