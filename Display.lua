@@ -391,7 +391,10 @@ function Display:UpdateVisibility()
 end
 
 function Display:SetTrackingSpell(skill, spell)
-	tracking_spells[(GetSpellInfo(spell))] = skill
+	local spellName = GetSpellInfo(spell)
+	if spellName then
+		tracking_spells[spellName] = skill
+	end
 	if fullInit then self:MINIMAP_UPDATE_TRACKING() end
 end
 
