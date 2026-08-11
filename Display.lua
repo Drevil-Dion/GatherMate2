@@ -563,21 +563,29 @@ end
 -- Fallback icon placement when Astrolabe fails (missing zone data)
 -- Places icon directly on minimap using simple math
 local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
+	print(string.format("GatherMate2: Trying direct placement for zone %d at %.4f,%.4f", zone, x, y))
+	
 	-- Get player's current position
 	local px, py = GetPlayerMapPosition("player")
 	if not px or not py or px == 0 or py == 0 then
+		print("GatherMate2: Direct placement failed - invalid player position")
 		return false
 	end
+	
+	print(string.format("GatherMate2: Player at %.4f,%.4f", px, py))
 	
 	-- Calculate offset from player
 	local dx = (x - px) * minimapWidth * 2
 	local dy = (py - y) * minimapHeight * 2
+	
+	print(string.format("GatherMate2: Offset dx=%.2f, dy=%.2f (minimapWidth=%.2f, height=%.2f)", dx, dy, minimapWidth, minimapHeight))
 	
 	-- Apply rotation if minimap rotates
 	if rotateMinimap and sin and cos then
 		local rotDx = dx * cos - dy * sin
 		local rotDy = dx * sin + dy * cos
 		dx, dy = rotDx, rotDy
+		print("GatherMate2: Applied rotation")
 	end
 	
 	-- Check if within minimap bounds
@@ -587,12 +595,14 @@ local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
 		local scale = minimapWidth / dist
 		dx = dx * scale
 		dy = dy * scale
+		print(string.format("GatherMate2: Out of range (%.2f > %.2f), scaled to edge", dist, minimapWidth))
 	end
 	
 	-- Set position
 	pin:ClearAllPoints()
 	pin:SetPoint("CENTER", realMinimap, "CENTER", dx, -dy)
 	pin:Show()
+	print("GatherMate2: Icon placed successfully")
 	return true
 end
 
