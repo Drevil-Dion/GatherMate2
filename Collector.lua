@@ -26,21 +26,91 @@ local woodSpell2 = (GetSpellInfo(93463)) -- Journeyman
 local woodSpell3 = (GetSpellInfo(93464)) -- Expert
 local woodSpell4 = (GetSpellInfo(93465)) -- Artisan
 
-local spells = { -- spellname to "database name"
---	[miningSpell] = "Mining",
---	[herbSpell] = "Herb Gathering",
-	[fishSpell] = "Fishing",
-	[gasSpell] = "Extract Gas",
---	[openUnlocking] = "Treasure",
---	[openUnlocking2] = "Treasure",
---	[openSpell] = "Treasure",
---	[openNoTextSpell] = "Treasure",
---	[pickSpell] = "Treasure",
---	[woodSpell1] = "Woodcutting",
---	[woodSpell2] = "Woodcutting",
---	[woodSpell3] = "Woodcutting",
---	[woodSpell4] = "Woodcutting",
+local spells = {} -- spellname to "database name"
+
+-- Add spells that exist in this version of WoW
+if miningSpell then spells[miningSpell] = "Mining" end
+if herbSpell then spells[herbSpell] = "Herb Gathering" end
+if fishSpell then spells[fishSpell] = "Fishing" end
+if gasSpell then spells[gasSpell] = "Extract Gas" end
+if openUnlocking then spells[openUnlocking] = "Treasure" end
+if openUnlocking2 then spells[openUnlocking2] = "Treasure" end
+if openSpell then spells[openSpell] = "Treasure" end
+if openNoTextSpell then spells[openNoTextSpell] = "Treasure" end
+if pickSpell then spells[pickSpell] = "Treasure" end
+if woodSpell1 then spells[woodSpell1] = "Woodcutting" end
+if woodSpell2 then spells[woodSpell2] = "Woodcutting" end
+if woodSpell3 then spells[woodSpell3] = "Woodcutting" end
+if woodSpell4 then spells[woodSpell4] = "Woodcutting" end
+
+-- Mapping from loot item names to gathering node names
+local lootToNode = {
+	-- Mining Ore -> Vein/Deposit names
+	["Copper Ore"] = "Copper Vein",
+	["Tin Ore"] = "Tin Vein",
+	["Iron Ore"] = "Iron Deposit",
+	["Silver Ore"] = "Silver Vein",
+	["Gold Ore"] = "Gold Vein",
+	["Mithril Ore"] = "Mithril Deposit",
+	["Truesilver Ore"] = "Truesilver Deposit",
+	["Dark Iron Ore"] = "Dark Iron Deposit",
+	["Thorium Ore"] = "Small Thorium Vein",
+	["Dense Stone"] = "Small Thorium Vein",
+	["Arcane Crystal"] = "Rich Thorium Vein",
+	["Fel Iron Ore"] = "Fel Iron Deposit",
+	["Adamantite Ore"] = "Adamantite Deposit",
+	["Khorium Ore"] = "Khorium Vein",
+	["Cobalt Ore"] = "Cobalt Deposit",
+	["Saronite Ore"] = "Saronite Deposit",
+	["Titanium Ore"] = "Titanium Vein",
+	-- Herbalism
+	["Peacebloom"] = "Peacebloom",
+	["Silverleaf"] = "Silverleaf",
+	["Earthroot"] = "Earthroot",
+	["Mageroyal"] = "Mageroyal",
+	["Briarthorn"] = "Briarthorn",
+	["Stranglekelp"] = "Stranglekelp",
+	["Bruiseweed"] = "Bruiseweed",
+	["Wild Steelbloom"] = "Wild Steelbloom",
+	["Grave Moss"] = "Grave Moss",
+	["Kingsblood"] = "Kingsblood",
+	["Liferoot"] = "Liferoot",
+	["Fadeleaf"] = "Fadeleaf",
+	["Goldthorn"] = "Goldthorn",
+	["Khadgar's Whisker"] = "Khadgar's Whisker",
+	["Wintersbite"] = "Wintersbite",
+	["Firebloom"] = "Firebloom",
+	["Purple Lotus"] = "Purple Lotus",
+	["Arthas' Tears"] = "Arthas' Tears",
+	["Sungrass"] = "Sungrass",
+	["Blindweed"] = "Blindweed",
+	["Ghost Mushroom"] = "Ghost Mushroom",
+	["Gromsblood"] = "Gromsblood",
+	["Golden Sansam"] = "Golden Sansam",
+	["Dreamfoil"] = "Dreamfoil",
+	["Mountain Silversage"] = "Mountain Silversage",
+	["Plaguebloom"] = "Plaguebloom",
+	["Icecap"] = "Icecap",
+	["Black Lotus"] = "Black Lotus",
+	["Felweed"] = "Felweed",
+	["Dreaming Glory"] = "Dreaming Glory",
+	["Terocone"] = "Terocone",
+	["Ancient Lichen"] = "Ancient Lichen",
+	["Bloodthistle"] = "Bloodthistle",
+	["Mana Thistle"] = "Mana Thistle",
+	["Netherbloom"] = "Netherbloom",
+	["Nightmare Vine"] = "Nightmare Vine",
+	["Ragveil"] = "Ragveil",
+	["Flame Cap"] = "Flame Cap",
+	["Adder's Tongue"] = "Adder's Tongue",
+	["Goldclover"] = "Goldclover",
+	["Icethorn"] = "Icethorn",
+	["Lichbloom"] = "Lichbloom",
+	["Talandra's Rose"] = "Talandra's Rose",
+	["Tiger Lily"] = "Tiger Lily",
+	["Frost Lotus"] = "Frost Lotus",
 }
+
 local tooltipLeftText1 = _G["GameTooltipTextLeft1"]
 local strfind, stringmatch = string.find, string.match
 local pii = math.pi
@@ -73,6 +143,7 @@ end
 	Enable the collector
 ]]
 function Collector:OnEnable()
+	print("GatherMate2: Collector module enabled")
 	self:RegisterGatherEvents()
 end
 
@@ -80,7 +151,8 @@ end
 	Register the events we are interesting
 ]]
 function Collector:RegisterGatherEvents()
-	self:RegisterEvent("GAMEOBJECT_USED","GameObject")
+	print("GatherMate2: Registering gather events...")
+	self:RegisterEvent("LOOT_OPENED","LootOpened")  -- Use LOOT_OPENED instead of GAMEOBJECT_USED
 	self:RegisterEvent("UNIT_SPELLCAST_SENT","SpellStarted")
 	self:RegisterEvent("UNIT_SPELLCAST_STOP","SpellStopped")
 	self:RegisterEvent("UNIT_SPELLCAST_FAILED","SpellFailed")
@@ -91,6 +163,7 @@ function Collector:RegisterGatherEvents()
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "GasBuffDetector")
 	self:RegisterEvent("CHAT_MSG_LOOT","SecondaryGasCheck") -- for Storm Clouds
 	gatherEvents = true
+	print("GatherMate2: All events registered successfully")
 end
 
 --[[
@@ -148,6 +221,84 @@ function Collector:GatherCompleted()
 end
 
 --[[
+	LOOT_OPENED event - fires when a loot window opens (including gathering nodes)
+	This is the primary detection method for Classic WoW since GAMEOBJECT_USED doesn't exist
+]]
+function Collector:LootOpened()
+	print("GatherMate2: LootOpened event fired")
+	
+	-- Check if we were casting a gathering spell
+	if not prevSpell or not spells[prevSpell] then
+		print(string.format("GatherMate2: LootOpened but no gathering spell active (prevSpell=%s)", tostring(prevSpell)))
+		return
+	end
+	
+	print(string.format("GatherMate2: Active gathering spell: %s", prevSpell))
+	
+	-- IMPORTANT: Set map to current zone BEFORE getting position
+	SetMapToCurrentZone()
+	
+	-- Try to get the loot source name (the node we're gathering from)
+	local targetName = nil
+	
+	-- Try to get target info from the loot source
+	if GetLootSourceInfo then
+		local guid = GetLootSourceInfo(1)
+		if guid then
+			targetName = UnitName("target")
+			print(string.format("GatherMate2: Target from GetLootSourceInfo: %s", tostring(targetName)))
+		end
+	end
+	
+	-- Fallback: use tooltip
+	if not targetName then
+		GameTooltip:SetLootItem(1)
+		targetName = GameTooltipTextLeft1 and GameTooltipTextLeft1:GetText()
+		print(string.format("GatherMate2: Target from GameTooltip: %s", tostring(targetName)))
+	end
+	
+	-- Another fallback: determine node name from loot items
+	if not targetName and GetNumLootItems() > 0 then
+		local lootIcon, lootName, lootQuantity = GetLootSlotInfo(1)
+		print(string.format("GatherMate2: First loot item: %s", tostring(lootName)))
+		
+		-- Try to map the loot to a node name
+		if lootName and lootToNode[lootName] then
+			targetName = lootToNode[lootName]
+			print(string.format("GatherMate2: Mapped '%s' to node '%s'", lootName, targetName))
+		elseif lootName then
+			-- For herbs, the loot name often IS the node name
+			-- For ore, we can make an educated guess
+			if spells[prevSpell] == "Mining" then
+				-- Remove " Ore" from the end and add " Vein" or " Deposit"
+				local oreName = lootName:gsub(" Ore$", "")
+				if oreName:find("Thorium") then
+					targetName = "Small Thorium Vein"
+				elseif oreName == "Dense Stone" then
+					targetName = "Small Thorium Vein"
+				else
+					targetName = oreName .. " Vein"
+				end
+			else
+				-- For herbs, the loot name usually matches the node name
+				targetName = lootName
+			end
+			print(string.format("GatherMate2: Guessed node name: %s", targetName))
+		else
+			targetName = "Unknown " .. spells[prevSpell] .. " Node"
+		end
+	end
+	
+	if targetName then
+		print(string.format("GatherMate2: Recording node: %s from spell %s", targetName, prevSpell))
+		self:addItem(prevSpell, targetName)
+		foundTarget = true
+	else
+		print("GatherMate2: Could not determine target name")
+	end
+end
+
+--[[
 	When the hand icon goes to a gear see if we can find a node under the gear ala for the fishing bobber OR herb of mine
 ]]
 function Collector:CursorChange()
@@ -200,9 +351,11 @@ end
 
 function Collector:SpellStarted(event,unit,spellcast,rank,target)
 	if unit ~= "player" then return end
+	print(string.format("GatherMate2: SpellStarted - spell=%s, target=%s", tostring(spellcast), tostring(target)))
 	foundTarget = false
 	ga ="No"
 	if spells[spellcast] then
+		print(string.format("GatherMate2: Recognized gathering spell: %s -> %s", spellcast, spells[spellcast]))
 		curSpell = spellcast
 		prevSpell = spellcast
 		local nodeID = GatherMate:GetIDForNode(spells[prevSpell], target)
@@ -225,20 +378,49 @@ local lastNodeCoords = 0
 
 -- Should only be called for fishing and gas clouds
 function Collector:addItem(skill,what)
+	print(string.format("GatherMate2: addItem called - skill=%s, what=%s", tostring(skill), tostring(what)))
+	
+	-- Ensure map is set to current zone first
+	if WorldMapFrame:IsShown() then 
+		print("GatherMate2: WorldMap is shown - aborting")
+		return 
+	else 
+		SetMapToCurrentZone() 
+	end
+	
 	local x, y = GetPlayerMapPosition("player")
-	if x == 0 and y == 0 then return end
-	-- Temporary fix, the map "ScarletEnclave" and "EasternPlaguelands"
-	-- both have the same English display name as "Eastern Plaguelands"
-	-- so we ignore the new Death Knight starting zone for now.
-	-- if GetMapInfo() == "ScarletEnclave" then return end TODO Validate in wrath, shoud be fine
-	--self:GatherCompleted()
-	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	print(string.format("GatherMate2: Player position (first try): %.4f, %.4f", x, y))
+	
+	-- If position is 0,0, try setting map again
+	if x == 0 and y == 0 then
+		print("GatherMate2: Position is 0,0, trying SetMapToCurrentZone() again...")
+		SetMapToCurrentZone()
+		x, y = GetPlayerMapPosition("player")
+		print(string.format("GatherMate2: Player position (second try): %.4f, %.4f", x, y))
+		
+		if x == 0 and y == 0 then
+			print("GatherMate2: Position still 0,0 - aborting")
+			return
+		end
+	end
+	
 	local zone = GetCurrentMapAreaID()
 	local level = GetCurrentMapDungeonLevel()
+	print(string.format("GatherMate2: Zone=%s, Level=%s", tostring(zone), tostring(level)))
+	
 	local node_type = spells[skill]
-	if not node_type or not what then return end
+	print(string.format("GatherMate2: node_type=%s", tostring(node_type)))
+	
+	if not node_type or not what then 
+		print(string.format("GatherMate2: Missing node_type or what - aborting"))
+		return 
+	end
+	
 	-- db lock check
-	if GatherMate.db.profile.dbLocks[node_type] then return	end
+	if GatherMate.db.profile.dbLocks[node_type] then 
+		print(string.format("GatherMate2: Database locked for %s - aborting", node_type))
+		return	
+	end
 
 	local range = GatherMate.db.profile.cleanupRange[node_type]
 	-- special case for fishing and gas extraction guage the pointing direction
@@ -247,16 +429,27 @@ function Collector:addItem(skill,what)
 		if yw == 0 or yh == 0 then return end -- No zone size data
 		x,y = self:GetFloatingNodeLocation(x, y, yw, yh)
 	end
+	
 	local nid = GatherMate:GetIDForNode(node_type, what)
+	print(string.format("GatherMate2: GetIDForNode returned: %s", tostring(nid)))
+	
 	-- if we couldnt find the node id for what was found, exit the add
-	if not nid then return end
+	if not nid then 
+		print(string.format("GatherMate2: Could not find node ID for '%s' - aborting", what))
+		return 
+	end
+	
 	local rares = self.rareNodes
 	-- run through the nearby's
 	local skip = false
 	local foundCoord = GatherMate.mapData:EncodeLoc(x, y, level)
 	local specialNode = false
 	local specialWhat = what
-	if foundCoord == lastNodeCoords and what == lastNode then return end
+	if foundCoord == lastNodeCoords and what == lastNode then 
+		print("GatherMate2: Duplicate of last node - aborting")
+		return 
+	end
+	
 	--[[ DISABLE SPECIAL NODE PROCESSING FOR HERBS
 	if self.specials[zone] and self.specials[zone][node_type] ~= nil then
 		specialWhat = GatherMate:GetNameForNode(node_type,self.specials[zone][node_type])
@@ -283,6 +476,9 @@ function Collector:addItem(skill,what)
 		end
 		lastNode = what
 		lastNodeCoords = foundCoord
+		print(string.format("GatherMate2: Successfully added %s node '%s' at %.4f, %.4f", node_type, what, x, y))
+	else
+		print(string.format("GatherMate2: Skipped adding node (duplicate nearby)"))
 	end
 end
 
@@ -303,13 +499,25 @@ end
 	get the target your clicking on
 ]]
 function Collector:GetWorldTarget()
-	if foundTarget or not spells[curSpell] then return end
-	if (MinimapCluster:IsMouseOver()) then return end
+	print("GatherMate2: GetWorldTarget called")
+	if foundTarget or not spells[curSpell] then 
+		print(string.format("GatherMate2: GetWorldTarget - foundTarget=%s, curSpell=%s", tostring(foundTarget), tostring(curSpell)))
+		return 
+	end
+	if (MinimapCluster:IsMouseOver()) then 
+		print("GatherMate2: GetWorldTarget - minimap is mouseover, skipping")
+		return 
+	end
 	local what = tooltipLeftText1:GetText()
+	print(string.format("GatherMate2: GetWorldTarget - tooltip text: '%s'", tostring(what)))
 	local nodeID = GatherMate:GetIDForNode(spells[prevSpell], what)
+	print(string.format("GatherMate2: GetWorldTarget - nodeID: %s", tostring(nodeID)))
 	if what and prevSpell and what ~= prevSpell and nodeID then
+		print(string.format("GatherMate2: GetWorldTarget - calling addItem"))
 		self:addItem(prevSpell,what)
 		foundTarget = true
+	else
+		print(string.format("GatherMate2: GetWorldTarget - conditions not met (what=%s, prevSpell=%s, nodeID=%s)", tostring(what), tostring(prevSpell), tostring(nodeID)))
 	end
 end
 
@@ -559,86 +767,102 @@ local treasure = {
 	[113771] = 533, -- Brightly Colored Egg
 	[113772] = 533, -- Brightly Colored Egg
 	[180228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[180229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[280228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[280229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[380228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[380229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[480228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[480229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	--Silithus
-	[967048] = 536, -- Hidden Cache
-	[967049] = 537, -- Rare Hidden Cache
-	[967050] = 538, -- Epic Hidden Cache
-	[394922] = 539, -- Intangible Rose
-	-- Burning Steppes
-	[967039] = 536, -- Hidden Cache
-	[967040] = 537, -- Rare Hidden Cache
-	[967041] = 538, -- Epic Hidden Cache
-	[395804] = 541, -- Lava Bloom
-	--Blasted Lands
---	[000000] = 536, -- Hidden Cache
---	[000000] = 537, -- Rare Hidden Cache
---	[000000] = 538, -- Epic Hidden Cache
-	--Azshara
-	[967033] = 536, -- Hidden Cache
-	[967034] = 537, -- Rare Hidden Cache
-	[967035] = 538, -- Epic Hidden Cache
-	[395798] = 540, -- Carnivorous Clam
-	-- Eastern Plaguelands
-	[967042] = 536, -- Hidden Cache
-	[967043] = 537, -- Rare Hidden Cache
-	[967044] = 538, -- Epic Hidden Cache
-	[395743] = 542, -- Ravenous Scourgethorn
-	--Western Plaguelands
-	[967045] = 536, -- Hidden Cache
-	[967046] = 537, -- Rare Hidden Cache
-	[967047] = 538, -- Epic Hidden Cache
-	--Un'Garo Crater
-	[967017] = 536, -- Hidden Cache
-	[967030] = 537, -- Rare Hidden Cache
-	[967031] = 538, -- Epic Hidden Cache
-	--Winterspring
-	[967051] = 536, -- Hidden Cache
-	[967052] = 537, -- Rare Hidden Cache
-	[967053] = 538, -- Epic Hidden Cache
-}
-local trees = {
-	[244630] = 601, -- Ashenvale Tree
-	[244634] = 602, -- Azshara Tree
-	[244631] = 603, -- Darkshore Tree
-	[244620] = 604, -- Dun Morogh Tree
-	[244628] = 605, -- Durotar Tree
-	[244618] = 606, -- Duskwood Tree
-	[244614] = 607, -- Elwynn Tree
-	[244633] = 608, -- Felwood Tree
-	[244621] = 609, -- Hillsbrad Tree
-	[244622] = 610, -- Hinterland Tree
-	[244619] = 611, -- Loch Modan Tree
-	[244629] = 612, -- Mulgore Tree
-	[244627] = 613, -- Plagueland Stump
-	[244626] = 614, -- Plagueland Tree
-	[244616] = 615, -- Redridge Tree
-	[244623] = 616, -- Silverpine Tree
-	[244636] = 617, -- Stonetalon Tree
-	[244625] = 618, -- Swamp Stump
-	[244632] = 619, -- Teldrassil Tree
-	[244624] = 620, -- Tirisfal Tree
-	[244617] = 621, -- Westfall Tree
-	[244635] = 622, -- Winterspring Tree
+local lootToNode = {
+	-- Mining Ore -> Vein/Deposit names
+	["Copper Ore"] = "Copper Vein",
+	["Tin Ore"] = "Tin Vein",
+	["Iron Ore"] = "Iron Deposit",
+	["Silver Ore"] = "Silver Vein",
+	["Gold Ore"] = "Gold Vein",
+	["Mithril Ore"] = "Mithril Deposit",
+	["Truesilver Ore"] = "Truesilver Deposit",
+	["Dark Iron Ore"] = "Dark Iron Deposit",
+	["Thorium Ore"] = "Small Thorium Vein",
+	["Dense Stone"] = "Small Thorium Vein",
+	["Arcane Crystal"] = "Rich Thorium Vein",
+	["Fel Iron Ore"] = "Fel Iron Deposit",
+	["Adamantite Ore"] = "Adamantite Deposit",
+	["Khorium Ore"] = "Khorium Vein",
+	["Cobalt Ore"] = "Cobalt Deposit",
+	["Saronite Ore"] = "Saronite Deposit",
+	["Titanium Ore"] = "Titanium Vein",
+	
+	-- Herbalism
+	["Peacebloom"] = "Peacebloom",
+	["Silverleaf"] = "Silverleaf",
+	["Earthroot"] = "Earthroot",
+	["Mageroyal"] = "Mageroyal",
+	["Briarthorn"] = "Briarthorn",
+	["Stranglekelp"] = "Stranglekelp",
+	["Bruiseweed"] = "Bruiseweed",
+	["Wild Steelbloom"] = "Wild Steelbloom",
+	["Grave Moss"] = "Grave Moss",
+	["Kingsblood"] = "Kingsblood",
+	["Liferoot"] = "Liferoot",
+	["Fadeleaf"] = "Fadeleaf",
+	["Goldthorn"] = "Goldthorn",
+	["Khadgar's Whisker"] = "Khadgar's Whisker",
+	["Wintersbite"] = "Wintersbite",
+	["Firebloom"] = "Firebloom",
+	["Purple Lotus"] = "Purple Lotus",
+	["Arthas' Tears"] = "Arthas' Tears",
+	["Sungrass"] = "Sungrass",
+	["Blindweed"] = "Blindweed",
+	["Ghost Mushroom"] = "Ghost Mushroom",
+	["Gromsblood"] = "Gromsblood",
+	["Golden Sansam"] = "Golden Sansam",
+	["Dreamfoil"] = "Dreamfoil",
+	["Mountain Silversage"] = "Mountain Silversage",
+	["Plaguebloom"] = "Plaguebloom",
+	["Icecap"] = "Icecap",
+	["Black Lotus"] = "Black Lotus",
+	["Felweed"] = "Felweed",
+	["Dreaming Glory"] = "Dreaming Glory",
+	["Terocone"] = "Terocone",
+	["Ancient Lichen"] = "Ancient Lichen",
+	["Bloodthistle"] = "Bloodthistle",
+	["Mana Thistle"] = "Mana Thistle",
+	["Netherbloom"] = "Netherbloom",
+	["Nightmare Vine"] = "Nightmare Vine",
+	["Ragveil"] = "Ragveil",
+	["Flame Cap"] = "Flame Cap",
+	["Adder's Tongue"] = "Adder's Tongue",
+	["Goldclover"] = "Goldclover",
+	["Icethorn"] = "Icethorn",
+	["Lichbloom"] = "Lichbloom",
+	["Talandra's Rose"] = "Talandra's Rose",
+	["Tiger Lily"] = "Tiger Lily",
+	["Frost Lotus"] = "Frost Lotus",
 }
 
 local lastNode_ID = 0
 -- Should be called for herb, mine, tree, treasure
 function Collector:GameObject(event, objid)
+	print(string.format("GatherMate2: GameObject event fired! objid=%s", tostring(objid)))
+	
+	-- Ensure we're on the right map
+	if WorldMapFrame:IsShown() then 
+		print("GatherMate2: WorldMap is shown, skipping")
+		return 
+	else 
+		SetMapToCurrentZone() 
+	end
+	
 	local x, y = GetPlayerMapPosition("player")
-	if x == 0 and y == 0 then return end
+	if x == 0 and y == 0 then
+		-- Try again after setting map
+		SetMapToCurrentZone()
+		x, y = GetPlayerMapPosition("player")
+		if x == 0 and y == 0 then
+			return
+		end
+	end
+	
 	-- Temporary fix, the map "ScarletEnclave" and "EasternPlaguelands"
 	-- both have the same English display name as "Eastern Plaguelands"
 	-- so we ignore the new Death Knight starting zone for now.
 	-- if GetMapInfo() == "ScarletEnclave" then return end TODO Validate in wrath, shoud be fine
-	--self:GatherCompleted()
-	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	
 	local zone = GetCurrentMapAreaID()
 	local level = GetCurrentMapDungeonLevel()
 	local node_type, node_id
@@ -655,7 +879,13 @@ function Collector:GameObject(event, objid)
 		node_type = "Woodcutting"
 		node_id = trees[objid]
 	end
-	-- print(objid, node_type, node_id) -- debug print
+	
+	-- Debug: Print what we found (remove this later if it works)
+	if node_type and node_id then
+		print(string.format("GatherMate2: Found %s node (ID: %d, objID: %d) at %.2f, %.2f in zone %s", 
+			node_type, node_id, objid, x, y, tostring(zone)))
+	end
+	
 	if not node_type or not node_id then return end
 	-- db lock check
 	if GatherMate.db.profile.dbLocks[node_type] then return	end
@@ -694,5 +924,8 @@ function Collector:GameObject(event, objid)
 		end
 		lastNode_ID = objid
 		lastNodeCoords = foundCoord
+		print(string.format("GatherMate2: Node added successfully!"))
+	else
+		print(string.format("GatherMate2: Node skipped (duplicate nearby)"))
 	end
 end

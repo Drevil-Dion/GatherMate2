@@ -37,9 +37,12 @@ function NewsFrame:InitializeNewsFrame(db, newsTable, addon)
     cAddon.db.NewsVersion = cAddon.version
     cAddon.news = newsTable
 
-    LinkUtil:AddHandler(string.lower(addon).."newsframe", function(link)
-        NewsFrame:OpenNewsFrame(addon)
-    end)
+    -- LinkUtil is only available in retail WoW, not Classic
+    if LinkUtil then
+        LinkUtil:AddHandler(string.lower(addon).."newsframe", function(link)
+            NewsFrame:OpenNewsFrame(addon)
+        end)
+    end
 end
 
 local function copyToClipboard(text)
