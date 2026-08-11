@@ -360,9 +360,15 @@ options.args.display.args.general = {
 local sortedFilter = setmetatable({}, {__index = function(t, k)
 	local new = {}
 	if k == "zones" then
-		for index, zoneID in pairs(GatherMate.mapData:GetAllMapIDs()) do
-			local name = GatherMate.mapData:MapLocalize(zoneID)
-			new[name] = name
+		-- Defer mapData access until actually needed
+		if GatherMate.mapData and GatherMate.mapData.GetAllMapIDs then
+			for index, zoneID in pairs(GatherMate.mapData:GetAllMapIDs()) do
+				local name = GatherMate.mapData:MapLocalize(zoneID)
+				new[name] = name
+			end
+		else
+			-- mapData not yet loaded, return empty table
+			print("GatherMate2 Config: mapData not ready yet for zone list")
 		end
 	else
 		local minHarvestTable = GatherMate.nodeMinHarvest[k]
