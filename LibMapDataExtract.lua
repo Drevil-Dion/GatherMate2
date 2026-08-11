@@ -40,15 +40,15 @@ local function InitializeMapData()
 				else
 					idtodxdy[i] = { [1] = 0, [2] = 0 }
 				end
-			end
-		end
-	end
+			end -- end if mapFileName
+		end -- end if SetMapByID
+	end -- end for loop
 	
 	-- Restore original map state
 	if origContinent and origZone then
 		SetMapZoom(origContinent, origZone)
 	end
-end
+end -- end function InitializeMapData
 
 -- Initialize map data when addon loads
 InitializeMapData()
@@ -76,7 +76,7 @@ function GatherMate.mapData:MapLocalize(mapfile)
 			return tostring(mapfile)
 		end
 	end
-    return mapToLocal[mapfile] or mapfile
+	return mapToLocal[mapfile] or mapfile
 end
 
 function GatherMate.mapData:EncodeLoc(x,y,level)
@@ -106,9 +106,9 @@ function GatherMate.mapData:MapArea(id)
 	if type(id) == "string" then
 		id = nametoid[id]
 	end
-    if idtodxdy[id] then
-    	return idtodxdy[id][1], idtodxdy[id][2]
-    else
-        return 0, 0
-    end
+	if idtodxdy[id] then
+		return idtodxdy[id][1], idtodxdy[id][2]
+	else
+		return 0, 0
+	end
 end
