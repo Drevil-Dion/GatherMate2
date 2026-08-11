@@ -42,6 +42,75 @@ if woodSpell1 then spells[woodSpell1] = "Woodcutting" end
 if woodSpell2 then spells[woodSpell2] = "Woodcutting" end
 if woodSpell3 then spells[woodSpell3] = "Woodcutting" end
 if woodSpell4 then spells[woodSpell4] = "Woodcutting" end
+
+-- Mapping from loot item names to gathering node names
+local lootToNode = {
+	-- Mining Ore -> Vein/Deposit names
+	["Copper Ore"] = "Copper Vein",
+	["Tin Ore"] = "Tin Vein",
+	["Iron Ore"] = "Iron Deposit",
+	["Silver Ore"] = "Silver Vein",
+	["Gold Ore"] = "Gold Vein",
+	["Mithril Ore"] = "Mithril Deposit",
+	["Truesilver Ore"] = "Truesilver Deposit",
+	["Dark Iron Ore"] = "Dark Iron Deposit",
+	["Thorium Ore"] = "Small Thorium Vein",
+	["Dense Stone"] = "Small Thorium Vein",
+	["Arcane Crystal"] = "Rich Thorium Vein",
+	["Fel Iron Ore"] = "Fel Iron Deposit",
+	["Adamantite Ore"] = "Adamantite Deposit",
+	["Khorium Ore"] = "Khorium Vein",
+	["Cobalt Ore"] = "Cobalt Deposit",
+	["Saronite Ore"] = "Saronite Deposit",
+	["Titanium Ore"] = "Titanium Vein",
+	-- Herbalism
+	["Peacebloom"] = "Peacebloom",
+	["Silverleaf"] = "Silverleaf",
+	["Earthroot"] = "Earthroot",
+	["Mageroyal"] = "Mageroyal",
+	["Briarthorn"] = "Briarthorn",
+	["Stranglekelp"] = "Stranglekelp",
+	["Bruiseweed"] = "Bruiseweed",
+	["Wild Steelbloom"] = "Wild Steelbloom",
+	["Grave Moss"] = "Grave Moss",
+	["Kingsblood"] = "Kingsblood",
+	["Liferoot"] = "Liferoot",
+	["Fadeleaf"] = "Fadeleaf",
+	["Goldthorn"] = "Goldthorn",
+	["Khadgar's Whisker"] = "Khadgar's Whisker",
+	["Wintersbite"] = "Wintersbite",
+	["Firebloom"] = "Firebloom",
+	["Purple Lotus"] = "Purple Lotus",
+	["Arthas' Tears"] = "Arthas' Tears",
+	["Sungrass"] = "Sungrass",
+	["Blindweed"] = "Blindweed",
+	["Ghost Mushroom"] = "Ghost Mushroom",
+	["Gromsblood"] = "Gromsblood",
+	["Golden Sansam"] = "Golden Sansam",
+	["Dreamfoil"] = "Dreamfoil",
+	["Mountain Silversage"] = "Mountain Silversage",
+	["Plaguebloom"] = "Plaguebloom",
+	["Icecap"] = "Icecap",
+	["Black Lotus"] = "Black Lotus",
+	["Felweed"] = "Felweed",
+	["Dreaming Glory"] = "Dreaming Glory",
+	["Terocone"] = "Terocone",
+	["Ancient Lichen"] = "Ancient Lichen",
+	["Bloodthistle"] = "Bloodthistle",
+	["Mana Thistle"] = "Mana Thistle",
+	["Netherbloom"] = "Netherbloom",
+	["Nightmare Vine"] = "Nightmare Vine",
+	["Ragveil"] = "Ragveil",
+	["Flame Cap"] = "Flame Cap",
+	["Adder's Tongue"] = "Adder's Tongue",
+	["Goldclover"] = "Goldclover",
+	["Icethorn"] = "Icethorn",
+	["Lichbloom"] = "Lichbloom",
+	["Talandra's Rose"] = "Talandra's Rose",
+	["Tiger Lily"] = "Tiger Lily",
+	["Frost Lotus"] = "Frost Lotus",
+}
+
 local tooltipLeftText1 = _G["GameTooltipTextLeft1"]
 local strfind, stringmatch = string.find, string.match
 local pii = math.pi
@@ -698,76 +767,6 @@ local treasure = {
 	[113771] = 533, -- Brightly Colored Egg
 	[113772] = 533, -- Brightly Colored Egg
 	[180228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[180229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[280228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[280229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[380228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[380229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[480228] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	[480229] = 535, -- Jinxed Hoodoo Pile (zg so 2x, 3x, 4x same nodes)
-	--Silithus
-	[967048] = 536, -- Hidden Cache
-	[967049] = 537, -- Rare Hidden Cache
-	[967050] = 538, -- Epic Hidden Cache
-	[394922] = 539, -- Intangible Rose
-	-- Burning Steppes
-	[967039] = 536, -- Hidden Cache
-	[967040] = 537, -- Rare Hidden Cache
-	[967041] = 538, -- Epic Hidden Cache
-	[395804] = 541, -- Lava Bloom
-	--Blasted Lands
---	[000000] = 536, -- Hidden Cache
---	[000000] = 537, -- Rare Hidden Cache
---	[000000] = 538, -- Epic Hidden Cache
-	--Azshara
-	[967033] = 536, -- Hidden Cache
-	[967034] = 537, -- Rare Hidden Cache
-	[967035] = 538, -- Epic Hidden Cache
-	[395798] = 540, -- Carnivorous Clam
-	-- Eastern Plaguelands
-	[967042] = 536, -- Hidden Cache
-	[967043] = 537, -- Rare Hidden Cache
-	[967044] = 538, -- Epic Hidden Cache
-	[395743] = 542, -- Ravenous Scourgethorn
-	--Western Plaguelands
-	[967045] = 536, -- Hidden Cache
-	[967046] = 537, -- Rare Hidden Cache
-	[967047] = 538, -- Epic Hidden Cache
-	--Un'Garo Crater
-	[967017] = 536, -- Hidden Cache
-	[967030] = 537, -- Rare Hidden Cache
-	[967031] = 538, -- Epic Hidden Cache
-	--Winterspring
-	[967051] = 536, -- Hidden Cache
-	[967052] = 537, -- Rare Hidden Cache
-	[967053] = 538, -- Epic Hidden Cache
-}
-local trees = {
-	[244630] = 601, -- Ashenvale Tree
-	[244634] = 602, -- Azshara Tree
-	[244631] = 603, -- Darkshore Tree
-	[244620] = 604, -- Dun Morogh Tree
-	[244628] = 605, -- Durotar Tree
-	[244618] = 606, -- Duskwood Tree
-	[244614] = 607, -- Elwynn Tree
-	[244633] = 608, -- Felwood Tree
-	[244621] = 609, -- Hillsbrad Tree
-	[244622] = 610, -- Hinterland Tree
-	[244619] = 611, -- Loch Modan Tree
-	[244629] = 612, -- Mulgore Tree
-	[244627] = 613, -- Plagueland Stump
-	[244626] = 614, -- Plagueland Tree
-	[244616] = 615, -- Redridge Tree
-	[244623] = 616, -- Silverpine Tree
-	[244636] = 617, -- Stonetalon Tree
-	[244625] = 618, -- Swamp Stump
-	[244632] = 619, -- Teldrassil Tree
-	[244624] = 620, -- Tirisfal Tree
-	[244617] = 621, -- Westfall Tree
-	[244635] = 622, -- Winterspring Tree
-}
-
--- Mapping from loot item names to gathering node names
 local lootToNode = {
 	-- Mining Ore -> Vein/Deposit names
 	["Copper Ore"] = "Copper Vein",
