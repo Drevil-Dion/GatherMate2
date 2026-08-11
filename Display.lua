@@ -521,11 +521,16 @@ function Display:addWorldPin(coord, nodeID, nodeType, zone, index, continent)
 		
 		if not success then
 			-- Astrolabe failed, use direct placement on world map
+			print(string.format("GatherMate2: World map direct placement for zone %d at %.4f,%.4f", zone, x, y))
 			pin:ClearAllPoints()
 			local wmWidth = WorldMapButton:GetWidth()
 			local wmHeight = WorldMapButton:GetHeight()
-			pin:SetPoint("TOPLEFT", WorldMapButton, "TOPLEFT", x * wmWidth, -y * wmHeight)
+			print(string.format("GatherMate2: WorldMapButton size: %.2f x %.2f", wmWidth, wmHeight))
+			local pixelX = x * wmWidth
+			local pixelY = y * wmHeight
+			pin:SetPoint("TOPLEFT", WorldMapButton, "TOPLEFT", pixelX, -pixelY)
 			pin:Show()
+			print("GatherMate2: World map icon placed")
 		end
 		
 		worldmapPins[index] = pin
@@ -564,16 +569,10 @@ function Display:getMiniPin(coord, nodeID, nodeType, zone, index)
 end
 
 -- Fallback icon placement when Astrolabe fails (missing zone data)
--- Places icon directly on minimap using simple math
+-- Places icon directly on minimap using correct coordinate math
+-- Note: Minimap icons SHOULD move as player moves - the player arrow stays centered
 local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
-	-- Don't recalculate if icon is already properly positioned
-	-- The issue is we're being called every frame, recalculating relative position
-	-- We need to use Astrolabe-style edge placement or anchor to map, not recalculate
-	
-	-- For now, let's just try using SetPoint with absolute minimap coordinates
-	-- This won't work perfectly but might be better
-	
-	-- Calculate the angle and distance from map center
+	-- Get player's current position
 	local px, py = GetPlayerMapPosition("player")
 	if not px or not py or px == 0 or py == 0 then
 		return false
@@ -585,35 +584,44 @@ local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
 		return false
 	end
 	
-	-- Calculate distance in yards
-	local dx = (x - px) * zoneWidth
-	local dy = (y - py) * zoneHeight
-	local distYards = math.sqrt(dx*dx + dy*dy)
+	-- Calculate offset from player in map coordinates (0-1 scale)
+	local dx = x - px
+	local dy = y - py
 	
-	-- Convert to minimap pixels (approximate)
-	-- mapRadius is in yards, minimapWidth is in pixels
-	local pixelsPerYard = minimapWidth / mapRadius
-	local pixelDx = dx * pixelsPerYard
-	local pixelDy = -dy * pixelsPerYard  -- Negative because WoW Y is inverted
+	-- Convert to yards
+	local yardsX = dx * zoneWidth
+	local yardsY = dy * zoneHeight
+	
+	-- Convert yards to pixels
+	-- mapRadius is in yards, it represents the radius of visible area
+	-- We need to scale to minimap pixel size
+	local scale = minimapWidth / mapRadius
+	local pixelX = yardsX * scale
+	local pixelY = -yardsY * scale  -- Negative because WoW Y axis is inverted
 	
 	-- Apply rotation if minimap rotates
 	if rotateMinimap and sin and cos then
-		local rotDx = pixelDx * cos - pixelDy * sin
-		local rotDy = pixelDx * sin + pixelDy * cos
-		pixelDx, pixelDy = rotDx, rotDy
+		local rotX = pixelX * cos - pixelY * sin
+		local rotY = pixelX * sin + pixelY * cos
+		pixelX, pixelY = rotX, rotY
 	end
 	
-	-- Clamp to minimap edge if out of range
-	local pixelDist = math.sqrt(pixelDx*pixelDx + pixelDy*pixelDy)
-	if pixelDist > minimapWidth then
-		local scale = minimapWidth / pixelDist
-		pixelDx = pixelDx * scale
-		pixelDy = pixelDy * scale
+	-- Check if out of range and clamp to edge if needed
+	local distPixels = math.sqrt(pixelX*pixelX + pixelY*pixelY)
+	if db.nodeRange and distPixels > minimapWidth then
+		-- Place on edge
+		local edgeScale = minimapWidth / distPixels
+		pixelX = pixelX * edgeScale
+		pixelY = pixelY * edgeScale
+	elseif distPixels > minimapWidth * 1.5 then
+		-- Too far, hide it
+		pin:Hide()
+		return false
 	end
 	
 	-- Set position relative to minimap center
 	pin:ClearAllPoints()
-	pin:SetPoint("CENTER", realMinimap, "CENTER", pixelDx, pixelDy)
+	pin:SetPoint("CENTER", realMinimap, "CENTER", pixelX, pixelY)
 	pin:Show()
 	return true
 end
