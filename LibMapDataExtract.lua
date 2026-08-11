@@ -20,6 +20,8 @@ local function InitializeMapData()
 	local origZone = GetCurrentMapZone()
 	
 	local count = 0
+	local zoneList = {}
+	
 	-- Iterate through all possible map IDs for Classic WoW
 	for i=1, 1000 do
 		if SetMapByID(i) then
@@ -43,6 +45,10 @@ local function InitializeMapData()
 					-- They represent the size of the playable area
 					idtodxdy[i] = { [1] = textureWidth, [2] = textureHeight }
 					count = count + 1
+					-- Store some zone info for debugging
+					if count <= 5 then
+						table.insert(zoneList, string.format("Zone %d (%s): %dx%d", i, zoneName or mapFileName, textureWidth, textureHeight))
+					end
 				else
 					-- Fallback: use reasonable defaults
 					idtodxdy[i] = { [1] = 4480, [2] = 3040 }  -- Average zone size
@@ -52,6 +58,9 @@ local function InitializeMapData()
 	end -- end for loop
 	
 	print(string.format("GatherMate2: Initialized %d zones", count))
+	if #zoneList > 0 then
+		print("GatherMate2: Sample zones: " .. table.concat(zoneList, ", "))
+	end
 	
 	-- Restore original map state
 	if origContinent and origZone and origContinent > 0 then
@@ -124,10 +133,19 @@ function GatherMate.mapData:MapArea(id)
 	end
 	if idtodxdy[id] then
 		local width, height = idtodxdy[id][1], idtodxdy[id][2]
-		print(string.format("GatherMate2: MapArea(%s) returning %s, %s", tostring(id), tostring(width), tostring(height)))
+		-- Only print if returning 0,0 which indicates a problem
+		if width == 0 or height == 0 then
+			print(string.format("GatherMate2: MapArea(%s) has zero dimensions: %s, %s", tostring(id), tostring(width), tostring(height)))
+		end
 		return width, height
 	else
-		print(string.format("GatherMate2: MapArea(%s) - no data, returning 0, 0", tostring(id)))
+		-- Zone not in our table - this shouldn't happen for valid zones
+		-- Only print once per zone to avoid spam
+		if not self.warnedZones then self.warnedZones = {} end
+		if not self.warnedZones[id] then
+			print(string.format("GatherMate2 WARNING: Zone %s not found in map data", tostring(id)))
+			self.warnedZones[id] = true
+		end
 		return 0, 0
 	end
 end
