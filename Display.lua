@@ -568,8 +568,15 @@ function Display:addMiniPin(pin, refresh)
 		return Astrolabe:ComputeDistance(lastC, zone, lastX, lastY, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
 	end)
 	
-	if not success or dist == nil or dist < 0 then
+	if not success then
+		print(string.format("GatherMate2 Display: Astrolabe:ComputeDistance failed for zone %d: %s", pin.zone, tostring(dist)))
+		pin:Hide()
+		return
+	end
+	
+	if dist == nil or dist < 0 then
 		-- Astrolabe failed, hide the pin
+		print(string.format("GatherMate2 Display: Invalid distance for zone %d (dist=%s)", pin.zone, tostring(dist)))
 		pin:Hide()
 		return
 	end
@@ -610,8 +617,10 @@ function Display:addMiniPin(pin, refresh)
 			
 			if success and result then
 				pin:SetAlpha(min(alpha + 0.5, db.alpha))
+				print(string.format("GatherMate2 Display: Successfully placed icon for zone %d at %.4f,%.4f", pin.zone, pin.x, pin.y))
 			else
 				-- Astrolabe failed, hide the pin
+				print(string.format("GatherMate2 Display: PlaceIconOnMinimap failed for zone %d: success=%s, result=%s", pin.zone, tostring(success), tostring(result)))
 				pin:Hide()
 			end
 		else
