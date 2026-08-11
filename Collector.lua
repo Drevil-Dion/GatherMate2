@@ -83,8 +83,7 @@ end
 ]]
 function Collector:RegisterGatherEvents()
 	print("GatherMate2: Registering gather events...")
-	self:RegisterEvent("GAMEOBJECT_USED","GameObject")
-	print("GatherMate2: Registered GAMEOBJECT_USED")
+	self:RegisterEvent("LOOT_OPENED","LootOpened")  -- Use LOOT_OPENED instead of GAMEOBJECT_USED
 	self:RegisterEvent("UNIT_SPELLCAST_SENT","SpellStarted")
 	self:RegisterEvent("UNIT_SPELLCAST_STOP","SpellStopped")
 	self:RegisterEvent("UNIT_SPELLCAST_FAILED","SpellFailed")
@@ -150,6 +149,60 @@ end
 function Collector:GatherCompleted()
 	prevSpell, curSpell = nil, nil
 	foundTarget = false
+end
+
+--[[
+	LOOT_OPENED event - fires when a loot window opens (including gathering nodes)
+	This is the primary detection method for Classic WoW since GAMEOBJECT_USED doesn't exist
+]]
+function Collector:LootOpened()
+	print("GatherMate2: LootOpened event fired")
+	
+	-- Check if we were casting a gathering spell
+	if not prevSpell or not spells[prevSpell] then
+		print(string.format("GatherMate2: LootOpened but no gathering spell active (prevSpell=%s)", tostring(prevSpell)))
+		return
+	end
+	
+	print(string.format("GatherMate2: Active gathering spell: %s", prevSpell))
+	
+	-- Try to get the loot source name (the node we're gathering from)
+	-- In Classic, we can get this from GetLootSourceInfo or just use prevSpell context
+	local targetName = nil
+	
+	-- Try to get target info from the loot source
+	if GetLootSourceInfo then
+		local guid = GetLootSourceInfo(1)
+		if guid then
+			targetName = UnitName("target")
+			print(string.format("GatherMate2: Target from GetLootSourceInfo: %s", tostring(targetName)))
+		end
+	end
+	
+	-- Fallback: use tooltip
+	if not targetName then
+		GameTooltip:SetLootItem(1)
+		targetName = GameTooltipTextLeft1 and GameTooltipTextLeft1:GetText()
+		print(string.format("GatherMate2: Target from GameTooltip: %s", tostring(targetName)))
+	end
+	
+	-- Another fallback: just record based on what we looted
+	if not targetName and GetNumLootItems() > 0 then
+		local lootIcon, lootName, lootQuantity = GetLootSlotInfo(1)
+		print(string.format("GatherMate2: First loot item: %s", tostring(lootName)))
+		
+		-- For herbs/ore, the loot name often matches or is related to the node
+		-- We'll use the spell context to determine the node type
+		targetName = "Unknown " .. spells[prevSpell] .. " Node"
+	end
+	
+	if targetName then
+		print(string.format("GatherMate2: Recording node: %s from spell %s", targetName, prevSpell))
+		self:addItem(prevSpell, targetName)
+		foundTarget = true
+	else
+		print("GatherMate2: Could not determine target name")
+	end
 end
 
 --[[
