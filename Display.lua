@@ -513,7 +513,18 @@ function Display:addWorldPin(coord, nodeID, nodeType, zone, index, continent)
 		pin.texture:SetTexture(nodeTextures[nodeType][nodeID])
 		pin.texture:SetTexCoord(0, 1, 0, 1)
 		pin.texture:SetVertexColor(1, 1, 1, 1)
-		Astrolabe:PlaceIconOnWorldMap(WorldMapButton, pin, continent, zone, x, y)
+		
+		-- Wrap in pcall to handle missing Astrolabe zone data
+		local success, err = pcall(function()
+			Astrolabe:PlaceIconOnWorldMap(WorldMapButton, pin, continent, zone, x, y)
+		end)
+		
+		if not success then
+			print(string.format("GatherMate2: Astrolabe error for zone %d: %s", zone, tostring(err)))
+			-- Hide the pin if Astrolabe can't place it
+			pin:Hide()
+		end
+		
 		worldmapPins[index] = pin
 	end
 	return pin
@@ -553,8 +564,16 @@ function Display:addMiniPin(pin, refresh)
 	-- don't update pins if world map is open.  Can change map
 	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
 
-	local dist, xDist, yDist = Astrolabe:ComputeDistance(lastC, zone, lastX, lastY, GetCurrentMapContinent(), pin.zone,
-		pin.x, pin.y)
+	local success, dist, xDist, yDist = pcall(function()
+		return Astrolabe:ComputeDistance(lastC, zone, lastX, lastY, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
+	end)
+	
+	if not success or dist == nil or dist < 0 then
+		-- Astrolabe failed, hide the pin
+		pin:Hide()
+		return
+	end
+	
 	if dist ~= nil and dist >= 0 then
 		-- if distance <= db.trackDistance, convert to the circle texture
 		if (not pin.isCircle or refresh) and trackShow[pin.nodeType] and dist <= db.trackDistance then
@@ -585,8 +604,16 @@ function Display:addMiniPin(pin, refresh)
 		end
 		-- finally show and SetPoint the pin
 		if db.nodeRange or alpha >= 1 then
-			local result = Astrolabe:PlaceIconOnMinimap(pin, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
-			pin:SetAlpha(min(alpha + 0.5, db.alpha))
+			local success, result = pcall(function()
+				return Astrolabe:PlaceIconOnMinimap(pin, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
+			end)
+			
+			if success and result then
+				pin:SetAlpha(min(alpha + 0.5, db.alpha))
+			else
+				-- Astrolabe failed, hide the pin
+				pin:Hide()
+			end
 		else
 			pin:Hide()
 		end

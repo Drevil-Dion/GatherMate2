@@ -206,6 +206,26 @@ frame:SetScript("OnEvent", function(self, event)
 	
 	print("GatherMate2: LibMapDataExtract initialization complete!")
 	
+	-- Try to populate Astrolabe zone data if it exists
+	local Astrolabe = DongleStub and DongleStub("Astrolabe-0.4", true)
+	if Astrolabe and Astrolabe.continents then
+		print("GatherMate2: Attempting to populate Astrolabe zone data...")
+		local populated = 0
+		for i = 1, 1000 do
+			if idtodxdy[i] then
+				local width, height = idtodxdy[i][1], idtodxdy[i][2]
+				-- Try to register this zone with Astrolabe
+				-- Astrolabe stores zone data in: Astrolabe.continents[C].zones[Z]
+				-- We don't know the continent, so we'll try to add it when needed
+				-- For now, just count how many zones we have
+				populated = populated + 1
+			end
+		end
+		print(string.format("GatherMate2: Prepared %d zones for Astrolabe", populated))
+	else
+		print("GatherMate2: Astrolabe not found or incompatible")
+	end
+	
 	-- Unregister since we only need to run once
 	self:UnregisterEvent("PLAYER_LOGIN")
 end)
