@@ -685,18 +685,28 @@ end
 	Update the minimap
 	we only care about nodes 1000 yards away
 ]]
+local lastDebugPrint = 0
 function Display:UpdateMiniMap(force)
+	local now = GetTime()
+	local debugThisCall = (now - lastDebugPrint) > 1.0
+	
+	if debugThisCall then
+		print(string.format("GatherMate2 Display: UpdateMiniMap start (force=%s)", tostring(force)))
+	end
+	
 	if not db.showMinimap then
-		print("GatherMate2 Display: UpdateMiniMap - showMinimap is disabled")
+		if debugThisCall then print("GatherMate2 Display: UpdateMiniMap - showMinimap is disabled") end
 		return
 	end
 	if not realMinimap:IsVisible() then
-		print(string.format("GatherMate2 Display: UpdateMiniMap - realMinimap not visible (Minimap=%s, IsVisible=%s)", tostring(realMinimap), tostring(realMinimap:IsVisible())))
+		if debugThisCall then
+			print(string.format("GatherMate2 Display: UpdateMiniMap - realMinimap not visible (Minimap=%s, IsVisible=%s)", tostring(realMinimap), tostring(realMinimap:IsVisible())))
+		end
 		return
 	end
 	
 	if WorldMapFrame:IsShown() then
-		print("GatherMate2 Display: UpdateMiniMap - WorldMapFrame is shown, skipping minimap update")
+		if debugThisCall then print("GatherMate2 Display: UpdateMiniMap - WorldMapFrame is shown, skipping minimap update") end
 		return
 	else
 		SetMapToCurrentZone()
@@ -706,7 +716,10 @@ function Display:UpdateMiniMap(force)
 	zone = GetCurrentMapAreaID()
 	local level = GetCurrentMapDungeonLevel()
 	
-	print(string.format("GatherMate2 Display: UpdateMiniMap called (force=%s), zone=%s, level=%s", tostring(force), tostring(zone), tostring(level)))
+	if debugThisCall then
+		print(string.format("GatherMate2 Display: UpdateMiniMap called (force=%s), zone=%s, level=%s", tostring(force), tostring(zone), tostring(level)))
+		lastDebugPrint = now
+	end
 	
 	if not zone or zone == -1 then
 		zone = nil
@@ -715,19 +728,29 @@ function Display:UpdateMiniMap(force)
 	end
 	
 	-- Debug: Show what's in the Mining database for this zone
-	local miningDB = GatherMate.db.global.data.Mining
-	if miningDB and miningDB[zone] then
-		local count = 0
-		for k,v in pairs(miningDB[zone]) do
-			count = count + 1
+	local success, result = pcall(function()
+		local miningDB = GatherMate.db.global.data.Mining
+		if miningDB and miningDB[zone] then
+			local count = 0
+			for k,v in pairs(miningDB[zone]) do
+				count = count + 1
+			end
+			return string.format("Mining database has %d nodes in zone %s", count, tostring(zone))
+		else
+			return string.format("Mining database has NO nodes in zone %s", tostring(zone))
 		end
-		print(string.format("GatherMate2 Display: Mining database has %d nodes in zone %s", count, tostring(zone)))
+	end)
+	if success then
+		print("GatherMate2 Display: " .. result)
 	else
-		print(string.format("GatherMate2 Display: Mining database has NO nodes in zone %s", tostring(zone)))
+		print("GatherMate2 Display: ERROR checking database - " .. tostring(result))
 	end
+	
+	print("GatherMate2 Display: About to get player position...")
 
 	-- get current player position
 	local x, y = GetPlayerMapPosition("player")
+	print(string.format("GatherMate2 Display: Player position: %.4f, %.4f", x or -1, y or -1))
 	-- if position is 0, the player changed the worldmap to another zone, just keep the old values
 	-- GetCurrentMapZone now changes when you changes maps
 	if (x == 0 or y == 0 or GatherMate.mapData:MapLocalize(zone) ~= GetRealZoneText()) then
