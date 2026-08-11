@@ -1311,7 +1311,12 @@ function Config:OnInitialize()
 	self.optionsFrame.DataShare = AceConfigDialog:AddToBlizOptions("GatherMate2", L["Share Data"], "GatherMate2", "sharedata")
 	self.optionsFrame.Output = AceConfigDialog:AddToBlizOptions("GatherMate2", L["Output"], "GatherMate2", "output")
 	--AceConfigDialog:AddToBlizOptions("GatherMate2", "GatherMate2")
+	
+	-- Register chat commands
 	self:RegisterChatCommand("gathermate", function() AceConfigDialog:Open("GatherMate2") end )
+	self:RegisterChatCommand("gathermate2", function() AceConfigDialog:Open("GatherMate2") end )
+	self:RegisterChatCommand("gm2", function() AceConfigDialog:Open("GatherMate2") end )
+	
 	self:RegisterMessage("GatherMate2ConfigChanged")
 	if DataBroker then
 		local launcher = DataBroker:NewDataObject("GatherMate2", {
