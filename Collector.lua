@@ -26,21 +26,22 @@ local woodSpell2 = (GetSpellInfo(93463)) -- Journeyman
 local woodSpell3 = (GetSpellInfo(93464)) -- Expert
 local woodSpell4 = (GetSpellInfo(93465)) -- Artisan
 
-local spells = { -- spellname to "database name"
---	[miningSpell] = "Mining",
---	[herbSpell] = "Herb Gathering",
-	[fishSpell] = "Fishing",
-	[gasSpell] = "Extract Gas",
---	[openUnlocking] = "Treasure",
---	[openUnlocking2] = "Treasure",
---	[openSpell] = "Treasure",
---	[openNoTextSpell] = "Treasure",
---	[pickSpell] = "Treasure",
---	[woodSpell1] = "Woodcutting",
---	[woodSpell2] = "Woodcutting",
---	[woodSpell3] = "Woodcutting",
---	[woodSpell4] = "Woodcutting",
-}
+local spells = {} -- spellname to "database name"
+
+-- Add spells that exist in this version of WoW
+if miningSpell then spells[miningSpell] = "Mining" end
+if herbSpell then spells[herbSpell] = "Herb Gathering" end
+if fishSpell then spells[fishSpell] = "Fishing" end
+if gasSpell then spells[gasSpell] = "Extract Gas" end
+if openUnlocking then spells[openUnlocking] = "Treasure" end
+if openUnlocking2 then spells[openUnlocking2] = "Treasure" end
+if openSpell then spells[openSpell] = "Treasure" end
+if openNoTextSpell then spells[openNoTextSpell] = "Treasure" end
+if pickSpell then spells[pickSpell] = "Treasure" end
+if woodSpell1 then spells[woodSpell1] = "Woodcutting" end
+if woodSpell2 then spells[woodSpell2] = "Woodcutting" end
+if woodSpell3 then spells[woodSpell3] = "Woodcutting" end
+if woodSpell4 then spells[woodSpell4] = "Woodcutting" end
 local tooltipLeftText1 = _G["GameTooltipTextLeft1"]
 local strfind, stringmatch = string.find, string.match
 local pii = math.pi
