@@ -743,7 +743,7 @@ options.args.cleanup = {
 							name = L["Select Zone"],
 							desc = L["Select Zone"],
 							type = "select",
-							values = sortedFilter["zones"],
+							values = function() return sortedFilter["zones"] end,
 							get = function() return selectedZone end,
 							set = function(k, v) selectedZone = v end,
 						},
