@@ -691,19 +691,33 @@ function Display:UpdateMiniMap(force)
 		return
 	end
 	if not realMinimap:IsVisible() then
-		print("GatherMate2 Display: UpdateMiniMap - realMinimap not visible")
+		print(string.format("GatherMate2 Display: UpdateMiniMap - realMinimap not visible (Minimap=%s, IsVisible=%s)", tostring(realMinimap), tostring(realMinimap:IsVisible())))
 		return
 	end
 	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
-	
-	print("GatherMate2 Display: UpdateMiniMap called (force=" .. tostring(force) .. ")")
 
 	-- update our zone info
 	zone = GetCurrentMapAreaID()
 	local level = GetCurrentMapDungeonLevel()
+	
+	print(string.format("GatherMate2 Display: UpdateMiniMap called (force=%s), zone=%s, level=%s", tostring(force), tostring(zone), tostring(level)))
+	
 	if not zone or zone == -1 then
 		zone = nil
+		print("GatherMate2 Display: UpdateMiniMap - invalid zone")
 		return
+	end
+	
+	-- Debug: Show what's in the Mining database for this zone
+	local miningDB = GatherMate.db.global.data.Mining
+	if miningDB and miningDB[zone] then
+		local count = 0
+		for k,v in pairs(miningDB[zone]) do
+			count = count + 1
+		end
+		print(string.format("GatherMate2 Display: Mining database has %d nodes in zone %s", count, tostring(zone)))
+	else
+		print(string.format("GatherMate2 Display: Mining database has NO nodes in zone %s", tostring(zone)))
 	end
 
 	-- get current player position
@@ -758,15 +772,18 @@ function Display:UpdateMiniMap(force)
 			cos = math_cos(facing)
 		end
 		-- iterate the node databases and add the nodes
+		local nodeCount = 0
 		for i, db_type in pairs(GatherMate.db_types) do
 			if GatherMate.Visible[db_type] then
 				for coord, nodeID in GatherMate:FindNearbyNode(zone, x, y, level, db_type, mapRadius * nodeRange) do
+					nodeCount = nodeCount + 1
 					local pin = self:getMiniPin(coord, nodeID, db_type, zone, (i * 1e14) + coord)
 					pin.keep = true
 					self:addMiniPin(pin, force)
 				end
 			end
 		end
+		print(string.format("GatherMate2 Display: UpdateMiniMap found %d nearby nodes in zone %s at %.4f,%.4f (range=%.1f)", nodeCount, tostring(zone), x, y, mapRadius * nodeRange))
 
 		minimapPinCount = 0
 		for k, v in pairs(minimapPins) do
