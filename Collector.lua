@@ -166,8 +166,10 @@ function Collector:LootOpened()
 	
 	print(string.format("GatherMate2: Active gathering spell: %s", prevSpell))
 	
+	-- IMPORTANT: Set map to current zone BEFORE getting position
+	SetMapToCurrentZone()
+	
 	-- Try to get the loot source name (the node we're gathering from)
-	-- In Classic, we can get this from GetLootSourceInfo or just use prevSpell context
 	local targetName = nil
 	
 	-- Try to get target info from the loot source
@@ -287,24 +289,28 @@ local lastNodeCoords = 0
 function Collector:addItem(skill,what)
 	print(string.format("GatherMate2: addItem called - skill=%s, what=%s", tostring(skill), tostring(what)))
 	
-	local x, y = GetPlayerMapPosition("player")
-	print(string.format("GatherMate2: Player position: %.4f, %.4f", x, y))
-	
-	if x == 0 and y == 0 then 
-		print("GatherMate2: Position is 0,0 - aborting")
-		return 
-	end
-	
-	-- Temporary fix, the map "ScarletEnclave" and "EasternPlaguelands"
-	-- both have the same English display name as "Eastern Plaguelands"
-	-- so we ignore the new Death Knight starting zone for now.
-	-- if GetMapInfo() == "ScarletEnclave" then return end TODO Validate in wrath, shoud be fine
-	--self:GatherCompleted()
+	-- Ensure map is set to current zone first
 	if WorldMapFrame:IsShown() then 
 		print("GatherMate2: WorldMap is shown - aborting")
 		return 
 	else 
 		SetMapToCurrentZone() 
+	end
+	
+	local x, y = GetPlayerMapPosition("player")
+	print(string.format("GatherMate2: Player position (first try): %.4f, %.4f", x, y))
+	
+	-- If position is 0,0, try setting map again
+	if x == 0 and y == 0 then
+		print("GatherMate2: Position is 0,0, trying SetMapToCurrentZone() again...")
+		SetMapToCurrentZone()
+		x, y = GetPlayerMapPosition("player")
+		print(string.format("GatherMate2: Player position (second try): %.4f, %.4f", x, y))
+		
+		if x == 0 and y == 0 then
+			print("GatherMate2: Position still 0,0 - aborting")
+			return
+		end
 	end
 	
 	local zone = GetCurrentMapAreaID()
