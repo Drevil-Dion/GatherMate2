@@ -74,6 +74,7 @@ end
 	Enable the collector
 ]]
 function Collector:OnEnable()
+	print("GatherMate2: Collector module enabled")
 	self:RegisterGatherEvents()
 end
 
@@ -81,7 +82,9 @@ end
 	Register the events we are interesting
 ]]
 function Collector:RegisterGatherEvents()
+	print("GatherMate2: Registering gather events...")
 	self:RegisterEvent("GAMEOBJECT_USED","GameObject")
+	print("GatherMate2: Registered GAMEOBJECT_USED")
 	self:RegisterEvent("UNIT_SPELLCAST_SENT","SpellStarted")
 	self:RegisterEvent("UNIT_SPELLCAST_STOP","SpellStopped")
 	self:RegisterEvent("UNIT_SPELLCAST_FAILED","SpellFailed")
@@ -92,6 +95,7 @@ function Collector:RegisterGatherEvents()
 	self:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED", "GasBuffDetector")
 	self:RegisterEvent("CHAT_MSG_LOOT","SecondaryGasCheck") -- for Storm Clouds
 	gatherEvents = true
+	print("GatherMate2: All events registered successfully")
 end
 
 --[[
@@ -201,9 +205,11 @@ end
 
 function Collector:SpellStarted(event,unit,spellcast,rank,target)
 	if unit ~= "player" then return end
+	print(string.format("GatherMate2: SpellStarted - spell=%s, target=%s", tostring(spellcast), tostring(target)))
 	foundTarget = false
 	ga ="No"
 	if spells[spellcast] then
+		print(string.format("GatherMate2: Recognized gathering spell: %s -> %s", spellcast, spells[spellcast]))
 		curSpell = spellcast
 		prevSpell = spellcast
 		local nodeID = GatherMate:GetIDForNode(spells[prevSpell], target)
@@ -632,8 +638,15 @@ local trees = {
 local lastNode_ID = 0
 -- Should be called for herb, mine, tree, treasure
 function Collector:GameObject(event, objid)
+	print(string.format("GatherMate2: GameObject event fired! objid=%s", tostring(objid)))
+	
 	-- Ensure we're on the right map
-	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
+	if WorldMapFrame:IsShown() then 
+		print("GatherMate2: WorldMap is shown, skipping")
+		return 
+	else 
+		SetMapToCurrentZone() 
+	end
 	
 	local x, y = GetPlayerMapPosition("player")
 	if x == 0 and y == 0 then
