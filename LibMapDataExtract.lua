@@ -159,6 +159,26 @@ function GatherMate.mapData:MapArea(id)
 				-- Cache it for next time
 				idtodxdy[id] = { [1] = textureWidth, [2] = textureHeight }
 				nametoid[mapFileName] = id
+				print(string.format("GatherMate2 MapArea: Cached zone %s dimensions: %d x %d", tostring(id), textureWidth, textureHeight))
+				return textureWidth, textureHeight
+			end
+		end
+		
+		-- SetMapByID failed or returned invalid data
+		-- For zone 202 (custom map patch zone), use reasonable fallback dimensions
+		-- Un'Goro Crater standard dimensions from retail WoW
+		if id == 202 then
+			local fallbackWidth, fallbackHeight = 1002, 668
+			print(string.format("GatherMate2 MapArea: Using hardcoded fallback for zone %s: %d x %d", tostring(id), fallbackWidth, fallbackHeight))
+			-- Cache it
+			idtodxdy[id] = { [1] = fallbackWidth, [2] = fallbackHeight }
+			return fallbackWidth, fallbackHeight
+		end
+			
+			if mapFileName and not isMicroDungeon and textureHeight and textureWidth and textureHeight > 0 and textureWidth > 0 then
+				-- Cache it for next time
+				idtodxdy[id] = { [1] = textureWidth, [2] = textureHeight }
+				nametoid[mapFileName] = id
 				if not self.warnedZones[id] then
 					print(string.format("GatherMate2: Dynamically added zone %s (%s): %dx%d", id, mapFileName, textureWidth, textureHeight))
 					self.warnedZones[id] = true
