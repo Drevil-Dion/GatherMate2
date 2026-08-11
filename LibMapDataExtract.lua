@@ -1,4 +1,3 @@
---[[
 -- A trimmed down version of LibMapData-1.0 including only the parts that Gathermate2 uses
 -- Classic WoW 3.3.5 Compatible Version
 
