@@ -4,7 +4,15 @@ local L = LibStub("AceLocale-3.0"):GetLocale("GatherMate2")
 
 local Astrolabe = DongleStub("Astrolabe-0.4")
 
+-- Detect custom minimap (DragonUI support)
 local realMinimap = Minimap
+if DragonMinimap then
+	print("GatherMate2: Detected DragonUI minimap, using DragonMinimap")
+	realMinimap = DragonMinimap
+elseif _G["DragonMinimap"] then
+	print("GatherMate2: Detected DragonUI minimap (global), using DragonMinimap")
+	realMinimap = _G["DragonMinimap"]
+end
 
 -- Compatibility fix for GetViewRadius (missing in 3.3.5a)
 -- Create a local helper function since Minimap may not accept method assignments
