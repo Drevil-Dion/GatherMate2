@@ -1,5 +1,6 @@
 --[[
 A trimmed down version of LibMapData-1.0 including only the parts that Gathermate2 uses
+Classic WoW 3.3.5 Compatible Version
 ]]
 
 local GatherMate = LibStub("AceAddon-3.0"):GetAddon("GatherMate2")
@@ -10,36 +11,72 @@ local nametoid = {}
 local idtodxdy = {}
 local mapToLocal = {}
 
--- Don't know a better way
--- Build list of areaIDs
-for i=0,9999 do
-	if C_WorldMap.GetWorldPosition(i, 0, 0) then -- and mapToLocal[C_WorldMap.GetMapFileByAreaID(i)] then
-		local x1, y1 = C_WorldMap.GetWorldPosition(i, 0, 0)
-		local x2, y2 = C_WorldMap.GetWorldPosition(i, 1, 1)
-        local mapfile = C_WorldMap.GetMapFileByAreaID(i)
-		nametoid[mapfile] = i
-        -- if map zoneid isn't valid then save mapfile name.  Prevents issue with MapLocalize
-		local zoneID = C_WorldMap.GetZoneIDByAreaID(i)
-		if zoneID > 0 then
-			mapToLocal[mapfile] = GetAreaName(zoneID)
-		else
-			mapToLocal[mapfile] = mapfile
+-- Classic WoW 3.3.5 compatible map initialization
+-- Build list of areaIDs using Classic API
+local function InitializeMapData()
+	-- Store current map state
+	local origContinent = GetCurrentMapContinent()
+	local origZone = GetCurrentMapZone()
+	
+	-- Iterate through all possible map IDs for Classic WoW
+	for i=1, 1000 do
+		if SetMapByID(i) then
+			local mapFileName, textureHeight, textureWidth = GetMapInfo()
+			if mapFileName then
+				nametoid[mapFileName] = i
+				
+				-- Get localized zone name
+				local zoneName = GetMapNameByID(i)
+				if zoneName and zoneName ~= "" then
+					mapToLocal[mapFileName] = zoneName
+				else
+					mapToLocal[mapFileName] = mapFileName
+				end
+				
+				-- Calculate map dimensions (width, height in yards)
+				-- Classic maps use textureHeight and textureWidth
+				if textureHeight and textureWidth then
+					idtodxdy[i] = { [1] = textureWidth or 0, [2] = textureHeight or 0 }
+				else
+					idtodxdy[i] = { [1] = 0, [2] = 0 }
+				end
+			end
 		end
-        idtodxdy[i] = { [1] = abs(x1-x2), [2] = abs(y1-y2) }
+	end
+	
+	-- Restore original map state
+	if origContinent and origZone then
+		SetMapZoom(origContinent, origZone)
 	end
 end
+
+-- Initialize map data when addon loads
+InitializeMapData()
 
 function GatherMate.mapData:MapLocalize(mapfile)
 	if mapfile == WORLDMAP_COSMIC_ID then return WORLD_MAP end
 	if type(mapfile) == "number" then
-		local zoneID = C_WorldMap.GetZoneIDByAreaID(mapfile)
-		if zoneID > 0 and GetAreaName(zoneID)then
-			return GetAreaName(zoneID)
+		local zoneName = GetMapNameByID(mapfile)
+		if zoneName and zoneName ~= "" then
+			return zoneName
 		else
-			return C_WorldMap.GetMapFileByAreaID(mapfile)
+			-- Fallback: try to get map info
+			local origContinent = GetCurrentMapContinent()
+			local origZone = GetCurrentMapZone()
+			if SetMapByID(mapfile) then
+				local mapFileName = GetMapInfo()
+				if origContinent and origZone then
+					SetMapZoom(origContinent, origZone)
+				end
+				return mapFileName or tostring(mapfile)
+			end
+			if origContinent and origZone then
+				SetMapZoom(origContinent, origZone)
+			end
+			return tostring(mapfile)
 		end
 	end
-    return mapToLocal[mapfile]
+    return mapToLocal[mapfile] or mapfile
 end
 
 function GatherMate.mapData:EncodeLoc(x,y,level)
