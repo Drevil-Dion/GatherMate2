@@ -843,16 +843,23 @@ function Display:UpdateMiniMap(force)
 		
 		-- iterate the node databases and add the nodes
 		local nodeCount = 0
-		for i, db_type in pairs(GatherMate.db_types) do
-			if GatherMate.Visible[db_type] then
-				for coord, nodeID in GatherMate:FindNearbyNode(zone, x, y, level, db_type, mapRadius * nodeRange) do
-					nodeCount = nodeCount + 1
-					local pin = self:getMiniPin(coord, nodeID, db_type, zone, (i * 1e14) + coord)
-					pin.keep = true
-					self:addMiniPin(pin, force)
+		local success, err = pcall(function()
+			for i, db_type in pairs(GatherMate.db_types) do
+				if GatherMate.Visible[db_type] then
+					for coord, nodeID in GatherMate:FindNearbyNode(zone, x, y, level, db_type, mapRadius * nodeRange) do
+						nodeCount = nodeCount + 1
+						local pin = self:getMiniPin(coord, nodeID, db_type, zone, (i * 1e14) + coord)
+						pin.keep = true
+						self:addMiniPin(pin, force)
+					end
 				end
 			end
+		end)
+		
+		if not success then
+			print("GatherMate2 Display: ERROR in node iteration: " .. tostring(err))
 		end
+		
 		print(string.format("GatherMate2 Display: UpdateMiniMap found %d nearby nodes in zone %s at %.4f,%.4f (range=%.1f)", nodeCount, tostring(zone), x, y, mapRadius * nodeRange))
 
 		minimapPinCount = 0
