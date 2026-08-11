@@ -571,12 +571,9 @@ end
 -- Fallback icon placement when Astrolabe fails (missing zone data)
 -- Places icon directly on minimap using absolute world coordinates
 local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
-	-- CRITICAL FIX: Set map to current zone to get accurate player position
-	-- Without this, GetPlayerMapPosition returns stale data
-	SetMapToCurrentZone()
-	
-	-- Get player's current position in world coordinates (0-1)
-	local px, py = GetPlayerMapPosition("player")
+	-- Use lastX, lastY which were already updated by UpdateMiniMap
+	-- (UpdateMiniMap already called SetMapToCurrentZone)
+	local px, py = lastX, lastY
 	if not px or not py or px == 0 or py == 0 then
 		return false
 	end
@@ -591,13 +588,6 @@ local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
 	local dx = x - px  -- Offset in map coordinates (0-1 scale)
 	local dy = y - py
 	
-	-- DEBUG: Only print occasionally to avoid spam
-	if not pin.lastDebug or (GetTime() - pin.lastDebug) > 2 then
-		print(string.format("GatherMate2: Icon at world %.4f,%.4f | Player at %.4f,%.4f | Offset %.4f,%.4f", 
-			x, y, px, py, dx, dy))
-		pin.lastDebug = GetTime()
-	end
-	
 	-- Convert to yards
 	local yardsX = dx * zoneWidth
 	local yardsY = dy * zoneHeight
@@ -610,12 +600,6 @@ local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
 	local pixelsPerYard = minimapWidth / mapRadius
 	local pixelX = yardsX * pixelsPerYard
 	local pixelY = -yardsY * pixelsPerYard  -- Negative because Y is inverted
-	
-	if not pin.lastDebug2 or (GetTime() - pin.lastDebug2) > 2 then
-		print(string.format("GatherMate2: Yards %.2f,%.2f | Pixels %.2f,%.2f | Dist %.2f yards", 
-			yardsX, yardsY, pixelX, pixelY, distYards))
-		pin.lastDebug2 = GetTime()
-	end
 	
 	-- Apply minimap rotation if enabled
 	if rotateMinimap and sin and cos then
@@ -962,7 +946,11 @@ function Display:UpdateMiniMap(force)
 			print("GatherMate2 Display: ERROR in node iteration: " .. tostring(err))
 		end
 		
-		print(string.format("GatherMate2 Display: UpdateMiniMap found %d nearby nodes in zone %s at %.4f,%.4f (range=%.1f)", nodeCount, tostring(zone), x, y, mapRadius * nodeRange))
+		-- DEBUG: Reduced verbosity
+		if nodeCount > 0 and ((now - lastDebugPrint) > 5.0 or force) then
+			print(string.format("GatherMate2: Found %d nodes in zone %s", nodeCount, tostring(zone)))
+			lastDebugPrint = now
+		end
 
 		minimapPinCount = 0
 		for k, v in pairs(minimapPins) do

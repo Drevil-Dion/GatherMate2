@@ -226,11 +226,8 @@ end
 	This is the primary detection method for Classic WoW since GAMEOBJECT_USED doesn't exist
 ]]
 function Collector:LootOpened()
-	print("GatherMate2: LootOpened event fired")
-	
 	-- Check if we were casting a gathering spell
 	if not prevSpell or not spells[prevSpell] then
-		print(string.format("GatherMate2: LootOpened but no gathering spell active (prevSpell=%s)", tostring(prevSpell)))
 		return
 	end
 	
