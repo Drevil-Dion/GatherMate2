@@ -588,6 +588,13 @@ local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
 	local dx = x - px  -- Offset in map coordinates (0-1 scale)
 	local dy = y - py
 	
+	-- DEBUG: Print placement info occasionally
+	if not pin.lastDebugTime or (GetTime() - pin.lastDebugTime) > 3 then
+		print(string.format("GatherMate2 MINIMAP ICON: node=%.4f,%.4f player=%.4f,%.4f offset=%.4f,%.4f zone=%dx%d", 
+			x, y, px, py, dx, dy, zoneWidth, zoneHeight))
+		pin.lastDebugTime = GetTime()
+	end
+	
 	-- Convert to yards
 	local yardsX = dx * zoneWidth
 	local yardsY = dy * zoneHeight
@@ -600,6 +607,12 @@ local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
 	local pixelsPerYard = minimapWidth / mapRadius
 	local pixelX = yardsX * pixelsPerYard
 	local pixelY = -yardsY * pixelsPerYard  -- Negative because Y is inverted
+	
+	if not pin.lastDebugTime2 or (GetTime() - pin.lastDebugTime2) > 3 then
+		print(string.format("GatherMate2 MINIMAP PIXELS: yards=%.2f,%.2f pixels=%.2f,%.2f dist=%.2f mapRadius=%.2f", 
+			yardsX, yardsY, pixelX, pixelY, distYards, mapRadius))
+		pin.lastDebugTime2 = GetTime()
+	end
 	
 	-- Apply minimap rotation if enabled
 	if rotateMinimap and sin and cos then
@@ -825,7 +838,7 @@ function Display:UpdateMiniMap(force)
 		setMapCallCount = 0
 	end
 	
-	local debugThisCall = false -- DISABLED: (now - lastDebugPrint) > 1.0
+	local debugThisCall = (now - lastDebugPrint) > 3.0  -- DEBUG: Show every 3 seconds
 	
 	if debugThisCall then
 		print(string.format("GatherMate2 Display: UpdateMiniMap start (force=%s)", tostring(force)))
@@ -946,9 +959,9 @@ function Display:UpdateMiniMap(force)
 			print("GatherMate2 Display: ERROR in node iteration: " .. tostring(err))
 		end
 		
-		-- DEBUG: Reduced verbosity
-		if nodeCount > 0 and ((now - lastDebugPrint) > 5.0 or force) then
-			print(string.format("GatherMate2: Found %d nodes in zone %s", nodeCount, tostring(zone)))
+		-- DEBUG: Show minimap update info
+		if ((now - lastDebugPrint) > 3.0 or force) then
+			print(string.format("GatherMate2 MINIMAP: Found %d nodes in zone %s at %.4f,%.4f", nodeCount, tostring(zone), x, y))
 			lastDebugPrint = now
 		end
 
