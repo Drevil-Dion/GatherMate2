@@ -1293,7 +1293,16 @@ function Config:OnInitialize()
 
 	self.importHelper = ImportHelper
 	AceConfig:RegisterOptionsTable("GatherMate2", options)
-	self.optionsFrame = LibStub("LibAboutPanel").new(nil, "GatherMate2")
+	
+	-- LibAboutPanel is optional and may not be available in all environments
+	local LibAboutPanel = LibStub("LibAboutPanel", true)
+	if LibAboutPanel then
+		self.optionsFrame = LibAboutPanel.new(nil, "GatherMate2")
+	else
+		-- Fallback: just use a simple table to hold references
+		self.optionsFrame = {}
+	end
+	
 	self.optionsFrame.Display = AceConfigDialog:AddToBlizOptions("GatherMate2", L["Display"], "GatherMate2", "display")
 	self.optionsFrame.Database = AceConfigDialog:AddToBlizOptions("GatherMate2", L["Database"], "GatherMate2", "cleanup")
 	self.optionsFrame.Import = AceConfigDialog:AddToBlizOptions("GatherMate2", L["Import"], "GatherMate2", "importing")
