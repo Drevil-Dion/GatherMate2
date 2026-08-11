@@ -3,9 +3,17 @@ A trimmed down version of LibMapData-1.0 including only the parts that Gathermat
 Classic WoW 3.3.5 Compatible Version
 ]]
 
+print("GatherMate2: Loading LibMapDataExtract.lua...")
+
 local GatherMate = LibStub("AceAddon-3.0"):GetAddon("GatherMate2")
 
+if not GatherMate then
+	print("GatherMate2 LibMapDataExtract: ERROR - Could not get GatherMate2 addon!")
+	return
+end
+
 GatherMate.mapData = {}
+print("GatherMate2: mapData table created")
 
 local nametoid = {}
 local idtodxdy = {}
