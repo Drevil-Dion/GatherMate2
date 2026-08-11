@@ -804,7 +804,17 @@ function Display:UpdateMiniMap(force)
 	end
 
 	-- if the player moved, the zoom changed, or changed the facing (rotating map) - update nodes
-	if x ~= lastX or y ~= lastY or diffZoom or facing ~= lastFacing or level ~= lastLevel or force then
+	local shouldUpdate = (x ~= lastX or y ~= lastY or diffZoom or facing ~= lastFacing or level ~= lastLevel or force)
+	print(string.format("GatherMate2 Display: CHECKPOINT 4 - shouldUpdate=%s (x≠lastX:%s, y≠lastY:%s, diffZoom:%s, facing≠lastFacing:%s, level≠lastLevel:%s, force:%s)", 
+		tostring(shouldUpdate),
+		tostring(x ~= lastX),
+		tostring(y ~= lastY),
+		tostring(diffZoom),
+		tostring(facing ~= lastFacing),
+		tostring(level ~= lastLevel),
+		tostring(force)))
+	
+	if shouldUpdate then
 		-- set upvalues to new settings
 		minimapShape = GetMinimapShape and self.minimapShapes[GetMinimapShape() or "ROUND"]
 		mapRadius = GetMinimapViewRadius() -- self.minimapSize[indoors][zoom] / 2
