@@ -74,6 +74,13 @@ end -- end function InitializeMapData
 -- Initialize map data when addon loads
 InitializeMapData()
 
+-- CRITICAL: Manually add zone 202 (Un'Goro Crater on ChromieCraft)
+-- SetMapByID(202) fails, so we hardcode the dimensions
+if not idtodxdy[202] then
+	idtodxdy[202] = { [1] = 1002, [2] = 668 }  -- Un'Goro Crater standard dimensions
+	print("GatherMate2: Manually added zone 202 with dimensions 1002x668")
+end
+
 function GatherMate.mapData:MapLocalize(mapfile)
 	if mapfile == WORLDMAP_COSMIC_ID then return WORLD_MAP end
 	if type(mapfile) == "number" then
