@@ -722,20 +722,13 @@ function Display:addMiniPin(pin, refresh)
 		end
 		-- finally show and SetPoint the pin
 		if db.nodeRange or alpha >= 1 then
-			local success, result = pcall(function()
-				return Astrolabe:PlaceIconOnMinimap(pin, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
-			end)
-			
-			if success and result then
+			-- ALWAYS use direct placement (bypass Astrolabe)
+			-- Astrolabe has missing zone data and causes incorrect positioning
+			local placed = PlaceIconOnMinimapDirect(pin, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
+			if placed then
 				pin:SetAlpha(min(alpha + 0.5, db.alpha))
 			else
-				-- Astrolabe failed, use direct placement
-				local placed = PlaceIconOnMinimapDirect(pin, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
-				if placed then
-					pin:SetAlpha(min(alpha + 0.5, db.alpha))
-				else
-					pin:Hide()
-				end
+				pin:Hide()
 			end
 		else
 			pin:Hide()
