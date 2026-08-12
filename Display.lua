@@ -288,12 +288,12 @@ function Display:OnEnable()
 		self.updateFrame = CreateFrame("Frame")
 		self.updateFrame:SetScript("OnUpdate", function(frame, elapsed)
 			last_update = last_update + elapsed
-			if last_update > 2 or forceNextUpdate then
+			-- Run UpdateMiniMap more frequently (every 0.5 seconds instead of 2)
+			-- since we disabled UpdateIconPositions
+			if last_update > 0.5 or forceNextUpdate then
 				Display:UpdateMiniMap(true)
 				last_update = 0
 				forceNextUpdate = false
-			else
-				Display:UpdateIconPositions()
 			end
 		end)
 	end
@@ -780,73 +780,10 @@ function Display:UpdateMaps()
 end
 
 function Display:UpdateIconPositions()
-	if not db.showMinimap or not realMinimap:IsVisible() or not zone then return end
-
-	-- get the current map  zoom
-	local zoom = realMinimap:GetZoom()
-	local diffZoom = zoom ~= lastZoom
-	-- if the map zoom changed, run a full update sweep
-	if diffZoom then
-		self:UpdateMiniMap()
-		return
-	end
-
-	-- we have no active minimap pins, just return early
-	if minimapPinCount == 0 then return end
-
-	-- CRITICAL: Force map refresh to get accurate player position
-	-- Without this, GetPlayerMapPosition returns cached coordinates
-	local continent = GetCurrentMapContinent()
-	local currentZone = GetCurrentMapZone()
-	if continent and currentZone and continent > 0 then
-		SetMapZoom(continent, 0)
-		SetMapZoom(continent, currentZone)
-	end
-	
-	-- get current player position
-	local x, y = GetPlayerMapPosition("player")
-	local level = GetCurrentMapDungeonLevel()
-	
-	-- if position is 0, the player changed the worldmap to another zone, just keep the old values
-	if (x == 0 or y == 0 or GatherMate.mapData:MapLocalize(zone) ~= GetRealZoneText()) then
-		x, y = lastX, lastY
-		level = lastLevel
-	end
-
-	-- for rotating minimap support
-	local facing
-	if rotateMinimap then
-		if GetPlayerFacing then
-			facing = GetPlayerFacing()
-		else
-			facing = -MiniMapCompassRing:GetFacing()
-		end
-	else
-		facing = lastFacing
-	end
-
-	local refresh
-
-	local newScale = realMinimap:GetScale()
-	if minimapScale ~= newScale then
-		minimapScale = newScale
-		refresh = true
-	end
-
-	-- if the player moved, or changed the facing (rotating map) - update nodes
-	if x ~= lastX or y ~= lastY or facing ~= lastFacing or level ~= lastLevel or refresh then
-		-- update upvalues for icon placement
-		lastX, lastY = x, y
-		lastC = GetCurrentMapContinent()
-		lastLevel = level
-		lastFacing = facing
-
-		-- iterate all nodes and check if they are still in range of our minimap display, or even still existing
-		for k, v in pairs(minimapPins) do
-			-- update the position of the node
-			self:addMiniPin(v, refresh)
-		end
-	end
+	-- DISABLED: This function was causing issues by fighting with UpdateMiniMap over map state
+	-- All icon positioning is now handled by UpdateMiniMap which runs every 2 seconds
+	-- This is sufficient for smooth icon updates
+	return
 end
 
 --[[
