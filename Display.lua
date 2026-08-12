@@ -662,6 +662,11 @@ local function PlaceIconOnMinimapDirect(pin, continent, zone, x, y)
 	-- Player is always at CENTER, icons are positioned relative to player
 	pin:ClearAllPoints()
 	pin:SetPoint("CENTER", realMinimap, "CENTER", pixelX, pixelY)
+	
+	-- DEBUG: Confirm placement
+	print(string.format("GatherMate2 PLACED ICON: CENTER at pixels %.2f,%.2f on frame %s", 
+		pixelX, pixelY, realMinimap:GetName() or "Unknown"))
+	
 	pin:Show()
 	
 	return true
