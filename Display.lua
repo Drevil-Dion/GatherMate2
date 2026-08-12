@@ -288,12 +288,14 @@ function Display:OnEnable()
 		self.updateFrame = CreateFrame("Frame")
 		self.updateFrame:SetScript("OnUpdate", function(frame, elapsed)
 			last_update = last_update + elapsed
-			-- Run UpdateMiniMap more frequently (every 0.5 seconds instead of 2)
-			-- since we disabled UpdateIconPositions
+			-- UpdateMiniMap runs every 0.5 seconds to refresh player position and create/remove icons
 			if last_update > 0.5 or forceNextUpdate then
 				Display:UpdateMiniMap(true)
 				last_update = 0
 				forceNextUpdate = false
+			else
+				-- UpdateIconPositions runs every frame to update existing icon positions
+				Display:UpdateIconPositions()
 			end
 		end)
 	end
@@ -676,6 +678,15 @@ function Display:addMiniPin(pin, refresh)
 	-- don't update pins if world map is open.  Can change map
 	if WorldMapFrame:IsShown() then return else SetMapToCurrentZone() end
 
+	-- DEBUG: Track how many times this is called per pin
+	if not pin.addMiniPinCallCount then pin.addMiniPinCallCount = 0 end
+	pin.addMiniPinCallCount = pin.addMiniPinCallCount + 1
+	
+	if pin.addMiniPinCallCount % 10 == 1 then  -- Print every 10th call
+		print(string.format("GatherMate2 DEBUG: addMiniPin called %d times for node at %.4f,%.4f", 
+			pin.addMiniPinCallCount, pin.x, pin.y))
+	end
+
 	local success, dist, xDist, yDist = pcall(function()
 		return Astrolabe:ComputeDistance(lastC, zone, lastX, lastY, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
 	end)
@@ -780,10 +791,43 @@ function Display:UpdateMaps()
 end
 
 function Display:UpdateIconPositions()
-	-- DISABLED: This function was causing issues by fighting with UpdateMiniMap over map state
-	-- All icon positioning is now handled by UpdateMiniMap which runs every 2 seconds
-	-- This is sufficient for smooth icon updates
-	return
+	-- This function runs every frame to update minimap icon positions
+	-- Icons must be updated continuously because minimap is player-centered
+	if not db.showMinimap or not realMinimap:IsVisible() or not zone then return end
+
+	-- we have no active minimap pins, just return early
+	if minimapPinCount == 0 then return end
+
+	-- Get current player position from cached values (updated by UpdateMiniMap)
+	local x, y = lastX, lastY
+	if not x or not y or x == 0 or y == 0 then return end
+
+	-- Get current minimap state
+	local zoom = realMinimap:GetZoom()
+	local facing
+	if rotateMinimap then
+		if GetPlayerFacing then
+			facing = GetPlayerFacing()
+		else
+			facing = -MiniMapCompassRing:GetFacing()
+		end
+	else
+		facing = lastFacing
+	end
+
+	-- Update rotation values if needed
+	if rotateMinimap then
+		sin = math_sin(facing)
+		cos = math_cos(facing)
+	end
+
+	-- Update ALL visible minimap pins
+	for k, pin in pairs(minimapPins) do
+		if pin and pin:IsShown() then
+			-- Recalculate position for this pin
+			PlaceIconOnMinimapDirect(pin, GetCurrentMapContinent(), pin.zone, pin.x, pin.y)
+		end
+	end
 end
 
 --[[
@@ -835,9 +879,9 @@ function Display:UpdateMiniMap(force)
 	local continent = GetCurrentMapContinent()
 	local currentZone = GetCurrentMapZone()
 	
-	-- Method 1: Toggle map completely
-	SetMapZoom(continent, 0) -- Continent view
-	SetMapZoom(continent, currentZone) -- Back to zone
+	-- Only refresh map position, don't toggle zoom
+	-- (toggling was causing conflicts with UpdateIconPositions)
+	SetMapToCurrentZone()
 	
 	-- update our zone info
 	zone = GetCurrentMapAreaID()
