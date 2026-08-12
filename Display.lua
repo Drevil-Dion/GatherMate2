@@ -1048,12 +1048,11 @@ function GatherMate:UpdateWorldMap(force) Display:UpdateWorldMap(force) end
 --[[
 	This function is for external addons to call to reparent all existing
 	minimap icons to a new minimap frame.
+	DISABLED: This was causing icons to be reparented to wrong frame
 ]]
 function Display:ReparentMinimapPins(parent)
-	Minimap = parent
-	GameTooltip:SetFrameLevel(parent:GetFrameLevel() + 2) -- Because Chinchilla_Expander_Minimap is on TOOLTIP strata too
-	for k, v in pairs(minimapPins) do
-		v:SetParent(parent)
-	end
-	self:UpdateIconPositions()
+	-- DO NOTHING - external reparenting disabled
+	-- Our icons are already on the correct frame (realMinimap)
+	print("GatherMate2: ReparentMinimapPins called but ignored (external addon tried to reparent)")
+	return
 end
