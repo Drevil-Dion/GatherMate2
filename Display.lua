@@ -772,9 +772,19 @@ function Display:UpdateIconPositions()
 	-- we have no active minimap pins, just return early
 	if minimapPinCount == 0 then return end
 
+	-- CRITICAL: Force map refresh to get accurate player position
+	-- Without this, GetPlayerMapPosition returns cached coordinates
+	local continent = GetCurrentMapContinent()
+	local currentZone = GetCurrentMapZone()
+	if continent and currentZone and continent > 0 then
+		SetMapZoom(continent, 0)
+		SetMapZoom(continent, currentZone)
+	end
+	
 	-- get current player position
 	local x, y = GetPlayerMapPosition("player")
 	local level = GetCurrentMapDungeonLevel()
+	
 	-- if position is 0, the player changed the worldmap to another zone, just keep the old values
 	if (x == 0 or y == 0 or GatherMate.mapData:MapLocalize(zone) ~= GetRealZoneText()) then
 		x, y = lastX, lastY
@@ -858,14 +868,18 @@ function Display:UpdateMiniMap(force)
 	if WorldMapFrame:IsShown() then
 		if debugThisCall then print("GatherMate2 Display: UpdateMiniMap - WorldMapFrame is shown, skipping") end
 		return
-	else
-		lastSetMapTime = now
-		-- CRITICAL: Force map position refresh by setting to a different map first
-		-- This ensures GetPlayerMapPosition returns fresh coordinates
-		SetMapZoom(GetCurrentMapContinent(), 0) -- Reset to continent view
-		SetMapToCurrentZone() -- Then set back to current zone - this refreshes player coords
 	end
-
+	
+	-- CRITICAL: Force map position refresh
+	-- Classic WoW 3.3.5 caches player position aggressively
+	lastSetMapTime = now
+	local continent = GetCurrentMapContinent()
+	local currentZone = GetCurrentMapZone()
+	
+	-- Method 1: Toggle map completely
+	SetMapZoom(continent, 0) -- Continent view
+	SetMapZoom(continent, currentZone) -- Back to zone
+	
 	-- update our zone info
 	zone = GetCurrentMapAreaID()
 	local level = GetCurrentMapDungeonLevel()
@@ -881,8 +895,20 @@ function Display:UpdateMiniMap(force)
 		return
 	end
 	
-	-- get current player position
+	-- get current player position (try multiple times if needed)
 	local x, y = GetPlayerMapPosition("player")
+	
+	-- If position is still 0 or same as last, force refresh again
+	if (x == 0 or y == 0) or (x == lastX and y == lastY and not force) then
+		-- Try one more time with aggressive refresh
+		SetMapToCurrentZone()
+		x, y = GetPlayerMapPosition("player")
+	end
+	
+	if debugThisCall then
+		print(string.format("GatherMate2 POSITION CHECK: x=%.4f y=%.4f (lastX=%.4f lastY=%.4f)", 
+			x or 0, y or 0, lastX or 0, lastY or 0))
+	end
 	
 	-- if position is 0, the player changed the worldmap to another zone, just keep the old values
 	-- GetCurrentMapZone now changes when you changes maps
