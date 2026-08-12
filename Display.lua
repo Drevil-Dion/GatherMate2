@@ -573,7 +573,9 @@ function Display:getMiniPin(coord, nodeID, nodeType, zone, index)
 		pin.nodeID = nodeID
 		pin.nodeType = nodeType
 		pin.worldmap = false
-		pin:SetParent(Minimap)
+		-- CRITICAL FIX: Use realMinimap not Minimap!
+		-- realMinimap is the detected custom minimap (DragonUI, etc.)
+		pin:SetParent(realMinimap)
 		pin:SetFrameStrata(minimapStrata)
 		pin:SetFrameLevel(minimapFrameLevel)
 		pin:SetHeight(12 * db.scale / minimapScale)
