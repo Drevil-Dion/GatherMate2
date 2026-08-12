@@ -4,14 +4,36 @@ local L = LibStub("AceLocale-3.0"):GetLocale("GatherMate2")
 
 local Astrolabe = DongleStub("Astrolabe-0.4")
 
--- Detect custom minimap (DragonUI support)
+-- Detect custom minimap (DragonUI / DragonUI_NewEra support)
 local realMinimap = Minimap
-if DragonMinimap then
-	print("GatherMate2: Detected DragonUI minimap, using DragonMinimap")
+local minimapName = "Minimap (default)"
+
+-- Try DragonUI_NewEra first (newer version)
+if _G["DragonUI_NewEraMinimap"] then
+	realMinimap = _G["DragonUI_NewEraMinimap"]
+	minimapName = "DragonUI_NewEra"
+	print("GatherMate2: Detected DragonUI_NewEra minimap")
+-- Then try standard DragonUI
+elseif DragonMinimap then
 	realMinimap = DragonMinimap
+	minimapName = "DragonUI"
+	print("GatherMate2: Detected DragonUI minimap")
 elseif _G["DragonMinimap"] then
-	print("GatherMate2: Detected DragonUI minimap (global), using DragonMinimap")
 	realMinimap = _G["DragonMinimap"]
+	minimapName = "DragonUI (global)"
+	print("GatherMate2: Detected DragonUI minimap (global)")
+-- Check for other common custom minimaps
+elseif _G["pfMinimap"] then
+	realMinimap = _G["pfMinimap"]
+	minimapName = "pfUI"
+	print("GatherMate2: Detected pfUI minimap")
+elseif _G["MiniMapLFG"] and _G["MiniMapLFG"].GetParent and _G["MiniMapLFG"]:GetParent() ~= Minimap then
+	-- Some addons replace minimap but keep default name
+	realMinimap = _G["MiniMapLFG"]:GetParent()
+	minimapName = "Custom (detected via MiniMapLFG parent)"
+	print("GatherMate2: Detected custom minimap via frame parent")
+else
+	print("GatherMate2: Using default Blizzard minimap")
 end
 
 -- Compatibility fix for GetViewRadius (missing in 3.3.5a)
